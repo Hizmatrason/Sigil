@@ -9,9 +9,6 @@ namespace Sigil.Domain.Entities;
 /// </summary>
 public sealed class LicenseTemplate : BaseEntity
 {
-    public Guid CompanyId { get; set; }
-    public Company Company { get; set; } = null!;
-
     public string Name { get; set; } = null!;
     public string ProductCode { get; set; } = null!;
     public string? Description { get; set; }

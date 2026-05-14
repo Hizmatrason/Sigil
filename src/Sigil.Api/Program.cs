@@ -98,12 +98,17 @@ try
         });
     builder.Services.AddAuthorization();
 
-    // CORS — allow Vite dev server
+    // CORS — origins из SIGIL_CORS_ORIGINS (запятая-separated), fallback для dev
+    var corsOrigins = (builder.Configuration["Cors:Origins"]
+        ?? Environment.GetEnvironmentVariable("SIGIL_CORS_ORIGINS")
+        ?? "http://localhost:5173")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
     builder.Services.AddCors(options =>
     {
         options.AddDefaultPolicy(policy =>
         {
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins(corsOrigins)
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();

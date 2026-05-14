@@ -16,13 +16,6 @@ public sealed class LicenseTemplateRepository : ILicenseTemplateRepository
             .Include(t => t.SigningKeys)
             .FirstOrDefaultAsync(t => t.Id == id, ct);
 
-    public Task<IReadOnlyList<LicenseTemplate>> GetByCompanyAsync(Guid companyId, CancellationToken ct = default)
-        => _db.LicenseTemplates.AsNoTracking()
-            .Where(t => t.CompanyId == companyId)
-            .OrderBy(t => t.Name)
-            .ToListAsync(ct)
-            .ContinueWith(t => (IReadOnlyList<LicenseTemplate>)t.Result, ct);
-
     public Task<IReadOnlyList<LicenseTemplate>> GetAllAsync(CancellationToken ct = default)
         => _db.LicenseTemplates.AsNoTracking()
             .OrderBy(t => t.Name)
@@ -41,14 +34,10 @@ public sealed class LicenseTemplateRepository : ILicenseTemplateRepository
             .ContinueWith(t => (IReadOnlyList<TemplateVersion>)t.Result, ct);
 
     public async Task AddAsync(LicenseTemplate entity, CancellationToken ct = default)
-    {
-        await _db.LicenseTemplates.AddAsync(entity, ct);
-    }
+        => await _db.LicenseTemplates.AddAsync(entity, ct);
 
     public async Task AddVersionAsync(TemplateVersion version, CancellationToken ct = default)
-    {
-        await _db.TemplateVersions.AddAsync(version, ct);
-    }
+        => await _db.TemplateVersions.AddAsync(version, ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _db.SaveChangesAsync(ct);

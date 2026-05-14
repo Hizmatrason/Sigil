@@ -52,7 +52,6 @@ export interface CreateCompanyRequest {
 
 export interface LicenseTemplate {
   id: string
-  companyId: string
   name: string
   productCode: string
   description?: string
@@ -75,7 +74,6 @@ export interface TemplateVersion {
 }
 
 export interface CreateTemplateRequest {
-  companyId: string
   name: string
   productCode: string
   description?: string

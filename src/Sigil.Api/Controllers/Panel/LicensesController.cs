@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sigil.Application.Dtos;
 using Sigil.Application.Services;
@@ -6,6 +7,7 @@ namespace Sigil.Api.Controllers.Panel;
 
 [ApiController]
 [Route("api/v1/panel/licenses")]
+[Authorize]
 public sealed class LicensesController : ControllerBase
 {
     private readonly LicenseService _service;
@@ -34,8 +36,15 @@ public sealed class LicensesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Issue([FromBody] LicenseCreateRequest req, CancellationToken ct)
     {
-        var result = await _service.IssueAsync(req, ct);
-        return Ok(result);
+        try
+        {
+            var result = await _service.IssueAsync(req, ct);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("{id:guid}/revoke")]

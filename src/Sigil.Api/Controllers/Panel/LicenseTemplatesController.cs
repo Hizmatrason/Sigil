@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sigil.Application.Dtos;
 using Sigil.Application.Services;
@@ -6,6 +7,7 @@ namespace Sigil.Api.Controllers.Panel;
 
 [ApiController]
 [Route("api/v1/panel/templates")]
+[Authorize]
 public sealed class LicenseTemplatesController : ControllerBase
 {
     private readonly LicenseTemplateService _service;
@@ -13,13 +15,8 @@ public sealed class LicenseTemplatesController : ControllerBase
     public LicenseTemplatesController(LicenseTemplateService service) => _service = service;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] Guid? companyId, CancellationToken ct)
+    public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        if (companyId.HasValue)
-        {
-            var list = await _service.GetByCompanyAsync(companyId.Value, ct);
-            return Ok(list);
-        }
         var all = await _service.GetAllAsync(ct);
         return Ok(all);
     }

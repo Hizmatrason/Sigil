@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sigil.Application.Dtos;
 using Sigil.Application.Services;
@@ -6,6 +7,7 @@ namespace Sigil.Api.Controllers.Panel;
 
 [ApiController]
 [Route("api/v1/panel/companies")]
+[Authorize]
 public sealed class CompaniesController : ControllerBase
 {
     private readonly CompanyService _service;

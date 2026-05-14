@@ -8,7 +8,6 @@ import {
   api,
   type LicenseTemplate,
   type CreateTemplateRequest,
-  type Company,
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,13 +22,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -41,7 +33,6 @@ import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
 const createSchema = z.object({
-  companyId: z.string().min(1, 'Company is required'),
   name: z.string().min(1, 'Name is required'),
   productCode: z.string().min(1, 'Product code is required'),
   description: z.string().optional(),
@@ -67,14 +58,6 @@ function TemplatesPage() {
     },
   })
 
-  const { data: companies } = useQuery({
-    queryKey: ['companies'],
-    queryFn: async () => {
-      const { data } = await api.get<Company[]>('/panel/companies')
-      return data
-    },
-  })
-
   const createMutation = useMutation({
     mutationFn: async (req: CreateTemplateRequest) => {
       const { data } = await api.post<LicenseTemplate>('/panel/templates', req)
@@ -94,7 +77,6 @@ function TemplatesPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     reset,
     formState: { errors },
   } = useForm<CreateForm>({
@@ -131,25 +113,6 @@ function TemplatesPage() {
               <DialogTitle>Create Template</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Company</Label>
-                <Select onValueChange={(v) => setValue('companyId', v, { shouldValidate: true })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select company..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companies?.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.companyId && (
-                  <p className="text-xs text-destructive">{errors.companyId.message}</p>
-                )}
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" {...register('name')} placeholder="e.g. Professional Suite" />
@@ -210,7 +173,6 @@ function TemplatesPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Product Code</TableHead>
-                  <TableHead>Company</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Offline / Validity</TableHead>
                   <TableHead>Created</TableHead>
@@ -219,42 +181,38 @@ function TemplatesPage() {
               <TableBody>
                 {templates?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       No templates yet. Create one to get started.
                     </TableCell>
                   </TableRow>
                 )}
-                {templates?.map((template) => {
-                  const company = companies?.find((c) => c.id === template.companyId)
-                  return (
-                    <TableRow key={template.id}>
-                      <TableCell>
-                        <Link
-                          to="/templates/$templateId"
-                          params={{ templateId: template.id }}
-                          className="font-medium hover:underline"
-                        >
-                          {template.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                          {template.productCode}
-                        </code>
-                      </TableCell>
-                      <TableCell>{company?.name ?? template.companyId}</TableCell>
-                      <TableCell>
-                        <Badge variant={template.status === 'Active' ? 'default' : 'secondary'}>
-                          {template.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {template.defaultOfflineDays}d / {template.defaultValidityDays}d
-                      </TableCell>
-                      <TableCell>{new Date(template.createdAt).toLocaleDateString()}</TableCell>
-                    </TableRow>
-                  )
-                })}
+                {templates?.map((template) => (
+                  <TableRow key={template.id}>
+                    <TableCell>
+                      <Link
+                        to="/templates/$templateId"
+                        params={{ templateId: template.id }}
+                        className="font-medium hover:underline"
+                      >
+                        {template.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                        {template.productCode}
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={template.status === 'Active' ? 'default' : 'secondary'}>
+                        {template.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {template.defaultOfflineDays}d / {template.defaultValidityDays}d
+                    </TableCell>
+                    <TableCell>{new Date(template.createdAt).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}

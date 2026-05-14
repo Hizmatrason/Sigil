@@ -8,7 +8,6 @@ import {
   type TemplateVersion,
   type UpdateTemplateRequest,
   type CreateTemplateVersionRequest,
-  type Company,
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -63,16 +62,6 @@ function TemplateDetailPage() {
       return data
     },
   })
-
-  const { data: companies } = useQuery({
-    queryKey: ['companies'],
-    queryFn: async () => {
-      const { data } = await api.get<Company[]>('/panel/companies')
-      return data
-    },
-  })
-
-  const company = companies?.find((c) => c.id === template?.companyId)
 
   // Update mutation
   const updateMutation = useMutation({
@@ -133,8 +122,6 @@ function TemplateDetailPage() {
           <h2 className="text-2xl font-bold tracking-tight">{template.name}</h2>
           <p className="text-sm text-muted-foreground">
             <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{template.productCode}</code>
-            {' · '}
-            {company?.name ?? 'Unknown Company'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -209,7 +196,6 @@ function TemplateDetailPage() {
                 <DetailRow label="Product Code">
                   <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{template.productCode}</code>
                 </DetailRow>
-                <DetailRow label="Company">{company?.name ?? template.companyId}</DetailRow>
                 <DetailRow label="Description">
                   {template.description || <span className="text-muted-foreground">—</span>}
                 </DetailRow>

@@ -1,8 +1,8 @@
 namespace Sigil.Application.Interfaces;
 
 /// <summary>
-/// Abstraction for signing license tokens.
-/// Implementations: EncryptedFileSigner (v1), VaultSigner (v1.5), Pkcs11Signer (enterprise).
+/// Abstraction for signing license tokens with Ed25519.
+/// Implementation: EncryptedFileSigner — AES-256-GCM encrypted key file, master key from env.
 /// </summary>
 public interface ISigner
 {

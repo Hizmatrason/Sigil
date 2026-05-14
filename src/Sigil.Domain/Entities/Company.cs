@@ -22,6 +22,5 @@ public sealed class Company : BaseEntity
     public string Metadata { get; set; } = "{}"; // JSON
 
     public ICollection<User> Users { get; set; } = [];
-    public ICollection<LicenseTemplate> LicenseTemplates { get; set; } = [];
     public ICollection<License> Licenses { get; set; } = [];
 }

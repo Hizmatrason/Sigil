@@ -8,15 +8,19 @@ namespace Sigil.Application.Services;
 public sealed class LicenseTemplateService
 {
     private readonly ILicenseTemplateRepository _repo;
+    private readonly ISigner _signer;
 
-    public LicenseTemplateService(ILicenseTemplateRepository repo) => _repo = repo;
+    public LicenseTemplateService(ILicenseTemplateRepository repo, ISigner signer)
+    {
+        _repo = repo;
+        _signer = signer;
+    }
 
     public async Task<LicenseTemplateResponse> CreateAsync(LicenseTemplateCreateRequest req, CancellationToken ct = default)
     {
         var template = new LicenseTemplate
         {
             Id = Guid.NewGuid(),
-            CompanyId = req.CompanyId,
             Name = req.Name,
             ProductCode = req.ProductCode,
             Description = req.Description,
@@ -29,6 +33,9 @@ public sealed class LicenseTemplateService
 
         await _repo.AddAsync(template, ct);
         await _repo.SaveChangesAsync(ct);
+
+        // Auto-generate the first signing key so versions can be created immediately
+        await _signer.GenerateKeyPairAsync(template.Id, ct);
 
         return Map(template);
     }
@@ -66,12 +73,6 @@ public sealed class LicenseTemplateService
         return template is null ? null : Map(template);
     }
 
-    public async Task<IReadOnlyList<LicenseTemplateResponse>> GetByCompanyAsync(Guid companyId, CancellationToken ct = default)
-    {
-        var list = await _repo.GetByCompanyAsync(companyId, ct);
-        return list.Select(Map).ToList();
-    }
-
     public async Task<IReadOnlyList<LicenseTemplateResponse>> GetAllAsync(CancellationToken ct = default)
     {
         var list = await _repo.GetAllAsync(ct);
@@ -92,7 +93,7 @@ public sealed class LicenseTemplateService
             ?? throw new InvalidOperationException("Template not found");
 
         var signingKey = template.SigningKeys.FirstOrDefault(k => k.Status == SigningKeyStatus.Active)
-            ?? throw new InvalidOperationException("No active signing key for template");
+            ?? throw new InvalidOperationException("No active signing key for this template");
 
         var existingVersions = await _repo.GetVersionsAsync(templateId, ct);
         var nextVersion = existingVersions.Count == 0 ? 1 : existingVersions.Max(v => v.Version) + 1;
@@ -117,7 +118,7 @@ public sealed class LicenseTemplateService
     }
 
     private static LicenseTemplateResponse Map(LicenseTemplate t)
-        => new(t.Id, t.CompanyId, t.Name, t.ProductCode, t.Description,
+        => new(t.Id, t.Name, t.ProductCode, t.Description,
                t.DefaultOfflineDays, t.DefaultValidityDays, t.Status.ToString(),
                t.CurrentVersionId, t.CreatedAt);
 

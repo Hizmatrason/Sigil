@@ -36,9 +36,11 @@ public sealed class LicenseService
         var company = await _companyRepo.GetByIdAsync(req.CompanyId, ct)
             ?? throw new InvalidOperationException("Company not found");
 
-        // Get active signing key for template
         var signingKey = template.SigningKeys.FirstOrDefault(k => k.Status == SigningKeyStatus.Active)
-            ?? throw new InvalidOperationException("No active signing key for template");
+            ?? throw new InvalidOperationException("No active signing key for this template");
+
+        var currentVersionId = template.CurrentVersionId
+            ?? throw new InvalidOperationException("Template has no versions yet. Create a version before issuing licenses");
 
         var licenseKey = GenerateLicenseKey();
         var now = DateTime.UtcNow;
@@ -50,7 +52,7 @@ public sealed class LicenseService
             Id = Guid.NewGuid(),
             CompanyId = req.CompanyId,
             TemplateId = req.TemplateId,
-            TemplateVersionId = template.CurrentVersionId ?? template.Id,
+            TemplateVersionId = currentVersionId,
             LicenseKey = licenseKey,
             Status = LicenseStatus.Active,
             Config = req.Config,

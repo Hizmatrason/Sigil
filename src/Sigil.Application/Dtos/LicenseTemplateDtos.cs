@@ -1,7 +1,6 @@
 namespace Sigil.Application.Dtos;
 
 public sealed record LicenseTemplateCreateRequest(
-    Guid CompanyId,
     string Name,
     string ProductCode,
     string? Description,
@@ -17,7 +16,6 @@ public sealed record LicenseTemplateUpdateRequest(
 
 public sealed record LicenseTemplateResponse(
     Guid Id,
-    Guid CompanyId,
     string Name,
     string ProductCode,
     string? Description,
