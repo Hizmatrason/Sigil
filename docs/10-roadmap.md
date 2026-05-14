@@ -2,7 +2,7 @@
 
 Фазы построены так, что каждая даёт работающий продукт. Можно остановиться на любой и иметь полезное.
 
-## Фаза 0 — Скелет (1 неделя)
+## Фаза 0 — Скелет ✅
 
 **Цель:** репозиторий, CI, миграции, "Hello World" health-check.
 
@@ -10,35 +10,57 @@
 - [x] `Sigil.Api` отвечает `200 OK` на `/health`.
 - [x] EF Core + Npgsql + первая миграция (расширения `pgcrypto`, `ltree`).
 - [x] Docker-compose c Postgres.
-- [ ] CI (Gitea Actions / self-hosted): build + unit tests + docker build. // Не нужно
 - [x] Serilog → stdout, OpenTelemetry заглушка.
 - [x] README с инструкцией «как запустить локально».
 
-## Фаза 1 — Ядро лицензирования (2–3 недели)
+> CI не нужен — сольный проект.
+
+## Фаза 1 — Ядро лицензирования ✅
 
 **Цель:** можно вручную выпустить лицензию через API, клиент-SDK её проверяет оффлайн.
 
 - [x] Сущности: `Company` (tree), `User`, `LicenseTemplate`, `TemplateVersion`, `SigningKey`, `License`, `LicenseVersion`.
-- [x] `EncryptedFileSigner` + master key из env.
-- [x] Endpoint'ы Panel API: companies CRUD, templates CRUD, licenses CRUD (без UI, через curl/Postman).
+- [x] `EncryptedFileSigner` + master key из env (AES-256-GCM, ключ не покидает `Span<byte>`).
+- [x] Panel API: companies CRUD, templates CRUD, licenses CRUD.
 - [x] Формат токена (header.payload.signature) + сериализация.
 - [x] Подпись Ed25519 через NSec.
 - [x] **`Sigil.Client` SDK** (.NET): парсинг, проверка подписи, проверка `exp`, статусы.
-- [ ] Простейший консольный sample-проект, демонстрирующий проверку.
-- [ ] Unit tests на signer + SDK (golden vectors) — не делаем (решение: без unit-тестов).
 - [x] Integration tests с Testcontainers (DatabaseMigrationTests).
 
-## Фаза 2 — Веб-панель MVP (3–4 недели)
+> **Долг из старого плана:** `LicenseTemplate` имеет `CompanyId` — по новому плану шаблоны глобальные. Рефакторинг — в Фазе 2.
 
-**Цель:** через UI можно сделать всё, что в Phase 1 делалось через API.
+## Фаза 2 — Веб-панель MVP (в процессе)
 
-- [ ] React/Vite-приложение, аутентификация (login/logout, ASP.NET Identity + cookie).
-- [ ] Дерево компаний (TreeView, CRUD, drag-and-drop для reparent).
-- [ ] Список и редактор шаблонов (Monaco для JSON Schema).
-- [ ] Live-form generator из JSON Schema (rjsf или собственная обёртка над react-hook-form/zod).
-- [ ] Выпуск лицензии (wizard), детали лицензии, revoke.
-- [ ] Download `.sigil` файла и public key.
-- [ ] Базовый audit-лог (запись + чтение).
+**Цель:** через UI можно сделать всё, что в Фазе 1 делалось через API. Шаблоны — глобальные.
+
+### Backend
+
+- [x] Cookie-based аутентификация (PBKDF2-SHA256, sliding 7-дневная сессия).
+- [x] Seed-оператор `admin@sigil.local` / `changeme` при первом старте.
+- [x] Endpoint'ы: `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`.
+- [x] Companies: `GET`, `POST`, `GET /{id}`, `DELETE /{id}` (soft-archive).
+- [x] Templates: полный CRUD + versions (`GET`, `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}`, `GET /{id}/versions`, `POST /{id}/versions`).
+- [x] Licenses: `GET`, `POST` (issue + Ed25519 sign), `GET /{id}`, `POST /{id}/revoke`, `GET /{id}/download`, `GET /{id}/public-key`.
+- [ ] **Рефакторинг: убрать `CompanyId` из `LicenseTemplate`** — сущность, DTO, миграция, репозиторий, сервис, контроллер, фронт.
+- [ ] CORS через env (`SIGIL_CORS_ORIGINS`), не хардкод.
+
+### Frontend
+
+- [x] Vite + React 19 + TypeScript + shadcn/ui + TanStack Router + TanStack Query + react-hook-form + zod + axios + sonner.
+- [x] Auth guard (`_layout.tsx` → `/auth/me` → редирект при 401).
+- [x] `/login` — форма входа.
+- [x] `/` (Dashboard) — карточки: Companies / Templates / Licenses.
+- [x] `/companies` — TreeView с expandable nodes, detail panel, создание дочерней, soft-archive.
+- [x] `/templates` — таблица, создание через диалог.
+- [x] `/templates/$id` — табы Details / Versions, edit-диалог, archive, создание версии (JSON textarea + Defaults + Changelog).
+- [x] `/licenses` — таблица с резолвом company/template. Issue wizard: выбор company + template, JSON config, expiry, offline days. Post-issue экран: license key + token + public key + copy.
+- [x] `/licenses/$id` — детали, JSON config viewer, Download `.sigil` / Download Public Key, Revoke.
+- [x] `/settings` — заглушка (email, displayName, role, API URL).
+- [ ] **Рефакторинг: убрать выбор компании при создании шаблона** (templates глобальные).
+- [ ] `/templates` — убрать `?companyId` фильтр из UI и API.
+- [ ] Drag-and-drop reparent компаний.
+- [ ] Live-form generator из JSON Schema (сейчас — ручной textarea).
+- [ ] `/audit` — страница аудит-лога (entity `AuditLog` есть в Domain, нет API + UI).
 - [ ] OpenAPI генерация + типизированный клиент (orval).
 
 ## Фаза 3 — Оффлайн + heartbeat (1–2 недели)
@@ -47,7 +69,7 @@
 
 - [ ] Client API endpoint'ы: `activate`, `heartbeat`, `deactivate`, `public-key`.
 - [ ] HMAC-аутентификация запросов.
-- [ ] Сущности `Activation`, `Heartbeat`, `dns_records` (запишем заранее).
+- [ ] Сущности `Activation`, `Heartbeat`.
 - [ ] Heartbeat-маркер (формат, подпись).
 - [ ] HW fingerprint provider (Windows + Linux).
 - [ ] SDK: background heartbeat task, atomic file replace, jitter, retry.
@@ -64,7 +86,7 @@
 - [ ] `WebhookDispatchJob` (Hangfire) с retry-стратегией (1m / 5m / 30m / 2h / 12h).
 - [ ] HMAC-подпись доставок (`X-Sigil-Signature`).
 - [ ] UI: `/settings/webhooks`, список endpoint'ов, история доставок, replay.
-- [ ] События: `license.issued`, `license.revoked`, `license.expired`, `license.activated`, `subscription.past_due`, `invoice.paid`.
+- [ ] События: `license.issued`, `license.revoked`, `license.expired`, `license.activated`, `license.heartbeat_missed`.
 - [ ] Документация для tenant-developer'ов (формат payload + примеры verify).
 
 ## Фаза 5 — Безопасность, ротация, аудит (1–2 недели)
@@ -88,9 +110,9 @@
 
 ## Ориентир по времени
 
-- **Сольный разработчик full-time:** Фазы 0–7 → ~16–18 недель до production-ready MVP.
-- **Команда 2–3 человек:** ~10 недель.
-- Фаза биллинга намеренно убрана из плана — добавляется позже, когда ядро стабильно.
+- Фазы 0 и 1 — завершены.
+- Фаза 2 — частично готова; остаток включая рефакторинг шаблонов.
+- Биллинг намеренно убран из плана — добавляется позже, когда ядро стабильно.
 
 ## Definition of Done для каждой фазы
 
