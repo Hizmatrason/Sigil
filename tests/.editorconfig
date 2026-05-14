@@ -1,0 +1,5 @@
+[*.cs]
+# Underscores are idiomatic in xUnit test names
+dotnet_diagnostic.CA1707.severity = none
+# Tests don't need full doc rigour
+dotnet_diagnostic.CA1707.severity = none

@@ -1,0 +1,49 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.nupkg
+*.snupkg
+.vs/
+.idea/
+*.DotSettings.user
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+artifacts/
+publish/
+
+## Node / Frontend
+node_modules/
+dist/
+.vite/
+.parcel-cache/
+.next/
+.turbo/
+
+## OS
+Thumbs.db
+.DS_Store
+*.swp
+
+## Logs
+*.log
+logs/
+
+## Secrets
+.env
+.env.*
+!.env.example
+appsettings.Production.json
+appsettings.Local.json
+secrets.json
+*.pfx
+*.key
+keys/
+
+## Backups / data
+data/
+backups/
+*.bak
