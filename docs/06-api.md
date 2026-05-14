@@ -76,18 +76,6 @@ GET    /api/v1/panel/licenses/{id}/versions
 POST   /api/v1/panel/licenses/{id}/versions/{ver}/rollback
 ```
 
-### Billing
-
-```
-GET    /api/v1/panel/billing/subscription
-POST   /api/v1/panel/billing/subscription/change-plan   { plan_id }
-POST   /api/v1/panel/billing/subscription/cancel
-GET    /api/v1/panel/billing/invoices
-GET    /api/v1/panel/billing/invoices/{id}
-GET    /api/v1/panel/billing/invoices/{id}/pdf
-GET    /api/v1/panel/plans                              — список доступных тарифов
-```
-
 ### Audit & Settings
 
 ```
@@ -103,9 +91,10 @@ POST   /api/v1/panel/settings/webhooks
 
 ```
 GET    /api/v1/panel/operator/companies               — все tenant'ы
-POST   /api/v1/panel/operator/plans
-PATCH  /api/v1/panel/operator/plans/{id}
 POST   /api/v1/panel/operator/companies/{id}/suspend
+GET    /api/v1/panel/operator/templates               — все глобальные шаблоны
+POST   /api/v1/panel/operator/templates               — создать шаблон
+PATCH  /api/v1/panel/operator/templates/{id}
 ```
 
 ## Client API (для SDK)
@@ -169,8 +158,6 @@ Tenant в `/settings/webhooks` задаёт endpoint и секрет. Sigil шл
 - `license.expired`
 - `license.activated`
 - `license.heartbeat_missed` (24ч без heartbeat'а у активной лицензии)
-- `subscription.past_due`
-- `invoice.paid`
 
 Доставка: at-least-once, с retry'ями (1m, 5m, 30m, 2h, 12h) до 5 попыток. История доставок — в `/settings/webhooks/deliveries`.
 

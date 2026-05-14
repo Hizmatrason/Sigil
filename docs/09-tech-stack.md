@@ -23,9 +23,7 @@
 - Если уйдём в Kubernetes сценарий — заменим на **NServiceBus** или Kafka-based pipeline.
 
 ### HTTP-клиенты
-- **Refit** на случай, если в будущем понадобятся интеграции (например, в Vault HTTP API). Для самого Sigil v1 — почти не нужен.
 - **Polly** для retry / circuit-breaker / timeout / bulkhead.
-- **VaultSharp** — клиент к HashiCorp Vault (если используется `VaultSigner`).
 
 ### Биллинг
 - **QuestPDF** для PDF-инвойсов (полностью offline-генерация).
@@ -38,7 +36,7 @@
 ### Тестирование
 - **xUnit** + **FluentAssertions**.
 - **Testcontainers** для интеграционных тестов с реальной PostgreSQL.
-- **WireMock.Net** для mock'а HTTP-зависимостей в тестах (Vault и т.п.).
+- **WireMock.Net** для mock'а HTTP-зависимостей в тестах.
 - **NetArchTest** для проверки архитектурных границ слоёв (Domain не зависит от Infra и т.п.).
 - Coverage не самоцель; добиваемся высокого покрытия Domain и Application, остальное — по месту.
 
@@ -49,7 +47,7 @@ Sigil.sln
   src/
     Sigil.Domain/                # сущности, value objects, доменные события, интерфейсы репозиториев
     Sigil.Application/           # use-cases (commands/queries/handlers), интерфейсы инфраструктуры
-    Sigil.Infrastructure/        # EF Core, Hangfire, Vault/SMTP clients, ISigner импл.
+    Sigil.Infrastructure/        # EF Core, Hangfire, SMTP client, EncryptedFileSigner
     Sigil.Api/                   # ASP.NET host, контроллеры, middleware, OpenAPI
     Sigil.Jobs/                  # (можно слить с Infrastructure) определения Hangfire job'ов
     Sigil.Client/                # NuGet-пакет SDK
@@ -92,14 +90,12 @@ Sigil.sln
   - кеш активаций / nonce'ов.
   - distributed locks для Hangfire-cluster (если будет много worker'ов).
 - **MinIO** — S3-совместимое объектное хранилище в Docker (бэкапы Postgres, архив аудит-лога, экспорт инвойсов, артефакты).
-- **HashiCorp Vault** — опционально, в Docker (Transit Engine для подписи + KV для секретов).
-
 ## Инфраструктура / DevOps (полностью self-hosted)
 
 ### Деплой v1 (минимум)
 
 - **Docker + docker-compose** на одной Linux-VM (Debian/Ubuntu LTS).
-- Контейнеры: `sigil-api`, `sigil-jobs` (тот же image, другая роль через env), `postgres`, `redis`, `minio`, `vault` (опц.), `nginx` (reverse proxy + статика панели), `cloudflared` (опционально — origin за Cloudflare Tunnel).
+- Контейнеры: `sigil-api`, `sigil-jobs` (тот же image, другая роль через env), `postgres`, `redis`, `minio`, `nginx` (reverse proxy + статика панели), `cloudflared` (опционально — origin за Cloudflare Tunnel).
 - Один процесс хост-OS, обновления через `docker compose pull && docker compose up -d`.
 - Cloudflare используется **только как edge** (TLS/WAF/DNS-зона домена), без API-интеграции. См. [07-cloudflare-edge.md](07-cloudflare-edge.md).
 
@@ -151,14 +147,14 @@ Sigil.sln
 
 ## Локальная разработка
 
-- `docker-compose.dev.yml` поднимает: Postgres + Redis + MinIO + Mailpit + Vault (dev-mode) + (опц.) Seq.
+- `docker-compose.dev.yml` поднимает: Postgres + Redis + MinIO + Mailpit + (опц.) Seq.
 - `dotnet watch run --project src/Sigil.Api`.
 - `pnpm dev --filter sigil-panel`.
 - Seed-скрипт создаёт оператора, демо-tenant, демо-шаблон, демо-лицензию.
 
 ## Что осознанно НЕ берём
 
-- **Cloud KMS / managed databases / SaaS biller'ы** — нарушают self-hosted-политику.
+- **Cloud KMS / Vault / managed databases / SaaS biller'ы** — нарушают self-hosted-политику.
 - **GraphQL** — лишний слой для CRUD-панели.
 - **Event sourcing** — простая реляционная модель достаточна.
 - **Microservices** в день первый — монолит с чистыми границами, выделяем по мере необходимости.

@@ -9,34 +9,23 @@
 | Заказчик с лицензией | Запустить лицензию на N серверов | HW fingerprint binding + revocation при обнаружении дубликата |
 | Внешний атакующий | Брутить license_key через client API | Rate-limit per IP/license, HMAC-подпись запросов |
 | Внешний атакующий | Утечка пользовательских данных через панель | Аутентификация, RBAC, изоляция по company subtree, аудит |
-| Внутренний нарушитель (сотрудник Sigil) | Слить приватники / выпустить пиратскую лицензию | Vault Transit / encrypted-file signer + аудит signing-операций + двух-человечный режим для сменных операций |
+| Внутренний нарушитель (сотрудник Sigil) | Слить приватники / выпустить пиратскую лицензию | Encrypted-file signer + аудит signing-операций |
 | Cloudflare-аккаунт компромисс | Перехват трафика через DNS | 2FA + hardware key на Cloudflare аккаунте; критичные операции вручную, не через API |
 | Утечка backups БД | Чтение конфигов лицензий, hash'ей паролей | Шифрование бэкапов перед загрузкой в MinIO (age/gpg), Argon2id для паролей, минимизация чувствительных полей |
 
-## Управление ключами (KMS)
+## Управление ключами
 
 Главный вопрос — где живут **приватные Ed25519 ключи** шаблонов.
 
-### Опции (только self-hosted)
+### `EncryptedFileSigner` — единственная реализация
 
-1. **`EncryptedFileSigner`** — основная реализация для v1.
-   - На сервере хранится зашифрованный файл `/var/lib/sigil/keys/<key_id>.enc`.
-   - Master key — в env-var `SIGIL_MASTER_KEY` (32-байтовое hex), загружается из docker secret / systemd `EnvironmentFile` / Vault-agent (если поднят Vault).
-   - Шифрование — AES-256-GCM с nonce'ом из 12 случайных байт, прибавленным к ciphertext.
-   - Расшифровка только в момент подписания, ключ держится в `Span<byte>` и затирается после использования.
-   - Файл с ключами включён в бэкапы (зашифрованный → можно архивировать в MinIO).
+- На сервере хранится зашифрованный файл `/var/lib/sigil/keys/<key_id>.enc`.
+- Master key — в env-var `SIGIL_MASTER_KEY` (32-байтовое hex), загружается из docker secret или systemd `EnvironmentFile`.
+- Шифрование — AES-256-GCM с nonce'ом из 12 случайных байт, прибавленным к ciphertext.
+- Расшифровка только в момент подписания, ключ держится в `Span<byte>` и затирается после использования.
+- Файл с ключами включён в бэкапы (уже зашифрованный → можно архивировать в MinIO).
 
-2. **`VaultSigner`** — для тех, кто хочет отделить hot-storage ключей от приложения.
-   - HashiCorp Vault, self-hosted в Docker / systemd / отдельная VM.
-   - Используется **Vault Transit Engine**: ключи живут внутри Vault, операция `transit/sign/<key_name>` возвращает подпись. Приватник не покидает Vault.
-   - Аутентификация app→Vault через AppRole + короткоживущие токены.
-   - Vault sealed-state контролируется через Shamir-shared keys → требует расшифровки несколькими операторами при перезапуске (можно настроить auto-unseal через KMIP-совместимое устройство, если есть аппаратный HSM).
-
-3. **`Pkcs11Signer`** — для enterprise с физическим HSM (YubiHSM2, SoftHSM, Thales и т.п.).
-   - Через `Pkcs11Interop`.
-   - В MVP не делаем, но абстракция `ISigner` позволяет добавить.
-
-> **Cloud KMS (AWS / Azure / Yandex) — не используем.** Это нарушает self-hosted-политику.
+> Cloud KMS, Vault, HSM — не используем. Всё хранится локально.
 
 ### Контракт `ISigner`
 
@@ -48,10 +37,7 @@ public interface ISigner
 }
 ```
 
-Реализации:
-- `EncryptedFileSigner` — v1, основная.
-- `VaultSigner` — v1.5, для разделения hot-keys и приложения.
-- `Pkcs11Signer` — enterprise / hardware HSM.
+Единственная реализация: `EncryptedFileSigner`.
 
 ### Ротация ключей
 
@@ -102,7 +88,7 @@ public interface ISigner
 
 - `.env`, `appsettings.Production.json` — никогда не коммитятся.
 - Локально — `appsettings.Development.json` с заглушками.
-- В CI — секреты из Gitea Actions / self-hosted runner'а (зашифрованы конфигом runner'а), Vault или docker secret. Cloud-secrets не используем.
+- В CI — секреты из Gitea Actions / self-hosted runner'а (зашифрованы конфигом runner'а) или docker secret. Cloud-secrets не используем.
 - `git-secrets` или `gitleaks` в pre-commit.
 
 ## Защита оффлайн-сценария от time-tampering

@@ -15,7 +15,7 @@ public sealed class CompaniesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var list = await _service.GetChildrenAsync(null, ct);
+        var list = await _service.GetAllAsync(ct);
         return Ok(list);
     }
 
@@ -45,5 +45,12 @@ public sealed class CompaniesController : ControllerBase
     {
         var company = await _service.CreateAsync(req, ct);
         return CreatedAtAction(nameof(Get), new { id = company.Id }, company);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var deleted = await _service.DeleteAsync(id, ct);
+        return deleted ? NoContent() : NotFound();
     }
 }

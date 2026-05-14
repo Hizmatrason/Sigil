@@ -34,6 +34,12 @@ public sealed class LicenseRepository : ILicenseRepository
             .ToListAsync(ct)
             .ContinueWith(t => (IReadOnlyList<License>)t.Result, ct);
 
+    public Task<IReadOnlyList<License>> GetAllAsync(CancellationToken ct = default)
+        => _db.Licenses.AsNoTracking()
+            .OrderByDescending(l => l.IssuedAt)
+            .ToListAsync(ct)
+            .ContinueWith(t => (IReadOnlyList<License>)t.Result, ct);
+
     public async Task AddAsync(License license, CancellationToken ct = default)
     {
         await _db.Licenses.AddAsync(license, ct);

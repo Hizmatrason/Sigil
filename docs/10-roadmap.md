@@ -40,7 +40,6 @@
 - [ ] Download `.sigil` файла и public key.
 - [ ] Базовый audit-лог (запись + чтение).
 - [ ] OpenAPI генерация + типизированный клиент (orval).
-- [ ] Smoke e2e на Playwright: создать tenant → шаблон → лицензию → revoke.
 
 ## Фаза 3 — Оффлайн + heartbeat (1–2 недели)
 
@@ -68,28 +67,14 @@
 - [ ] События: `license.issued`, `license.revoked`, `license.expired`, `license.activated`, `subscription.past_due`, `invoice.paid`.
 - [ ] Документация для tenant-developer'ов (формат payload + примеры verify).
 
-## Фаза 5 — Биллинг v1 (2 недели)
+## Фаза 5 — Безопасность, ротация, аудит (1–2 недели)
 
-**Цель:** планы, подписки, ручные инвойсы.
-
-- [ ] Сущности `Plan`, `Subscription`, `Invoice`, `InvoiceLine`.
-- [ ] `EntitlementService`, проверка лимитов перед мутациями.
-- [ ] `BillingCycleJob` — генерация инвойсов раз в сутки.
-- [ ] PDF через QuestPDF.
-- [ ] UI: `/billing/*`, баннеры trial/past_due.
-- [ ] Operator UI для управления планами и ручной отметки `paid`.
-- [ ] Webhook'и (`license.*`, `subscription.*`).
-
-## Фаза 6 — Безопасность, ротация, аудит (1–2 недели)
-
-- [ ] 2FA (TOTP) для operator-аккаунтов.
-- [ ] API tokens (PAT) с scoped permissions.
 - [ ] Key rotation flow (signing_keys.status трансформации).
 - [ ] Audit-лог UI с фильтрами и diff-viewer.
 - [ ] Security review checklist (CSP, HSTS, secure cookies, rate-limit конфиги).
 - [ ] Penetration testing (минимум — самопроверка по OWASP ASVS L1).
 
-## Фаза 7 — Production hardening (1–2 недели)
+## Фаза 6 — Production hardening (1–2 недели)
 
 - [ ] Бэкапы PG + учения восстановления.
 - [ ] Observability dashboards в Grafana.
@@ -99,24 +84,13 @@
 - [ ] Документация для tenant'ов (как встроить SDK, как настроить webhook'и).
 - [ ] NuGet-публикация `Sigil.Client`.
 
-## После MVP (по приоритету)
-
-1. **HashiCorp Vault Transit** для signing keys (вместо EncryptedFileSigner).
-2. **Банковский reconciliation-импорт** (CSV из 1С/банк-клиента) для авто-отметки оплат.
-3. **OpenIddict** + внутренний IdP для SSO между tenant'ами.
-4. **Sub-billing для tenant'ов** (white-label инвойсы конечным клиентам).
-5. **Mobile SDK** (Java/Kotlin, Swift) — если будут запросы.
-6. **License analytics** — usage heatmaps, geo-распределение, аномалии.
-7. **Marketplace шаблонов** между tenant'ами.
-8. **HSM / PKCS#11** для enterprise.
-
-> Намеренно вычеркнуто из бэклога: Stripe / cloud KMS / managed PG / Cloudflare-API-DNS — нарушают self-hosted-политику.
+> Намеренно вычеркнуто из бэклога: Stripe / cloud KMS / Vault / managed PG / Cloudflare-API-DNS — нарушают self-hosted-политику или добавляют лишнюю сложность.
 
 ## Ориентир по времени
 
 - **Сольный разработчик full-time:** Фазы 0–7 → ~16–18 недель до production-ready MVP.
 - **Команда 2–3 человек:** ~10 недель.
-- Можно срезать: Фаза 5 (биллинг) и Фаза 4 (DNS) — параллельно с другими, если разработчиков несколько.
+- Фаза биллинга намеренно убрана из плана — добавляется позже, когда ядро стабильно.
 
 ## Definition of Done для каждой фазы
 

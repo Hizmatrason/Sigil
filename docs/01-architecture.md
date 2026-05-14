@@ -14,14 +14,14 @@
                  │                                  ▼                │
                  │   ┌───────────────────────────────────────────┐   │
                  │   │              Application Core             │   │
-                 │   │  Companies │ Templates │ Licenses │ Bill. │   │
+                 │   │  Companies │ Templates │ Licenses        │   │
                  │   └─┬───────────┬───────────┬───────────┬─────┘   │
                  │     │           │           │                     │
                  │     ▼           ▼           ▼                     │
                  │  ┌─────┐  ┌──────────┐ ┌──────────┐               │
                  │  │ DB  │  │  Signer  │ │   Jobs   │               │
                  │  │ PG  │  │ (Ed25519)│ │(Hangfire)│               │
-                 │  │     │  │  + Vault │ │          │               │
+                 │  │     │  │ enc.file │ │          │               │
                  │  └─────┘  └──────────┘ └──────────┘               │
                  └──────────────┬───────────────────────────────────┘
                                 │
@@ -63,12 +63,12 @@
 - Clean-architecture слои:
   - `Sigil.Domain` — сущности, value objects, доменные сервисы (чистый C#, никаких зависимостей).
   - `Sigil.Application` — use-cases (commands/queries), интерфейсы инфраструктуры.
-  - `Sigil.Infrastructure` — EF Core, Hangfire jobs, ISigner-реализации (EncryptedFile/Vault), SMTP, MinIO-клиент.
+  - `Sigil.Infrastructure` — EF Core, Hangfire jobs, `EncryptedFileSigner`, SMTP, MinIO-клиент.
   - `Sigil.Api` — host + контроллеры.
 
 ### 5. Signer Service
 - Логически отдельный сервис (внутри процесса в v1, выносится позже).
-- Хранит **только публичные идентификаторы** ключей; приватники лежат либо в **HashiCorp Vault** (self-hosted), либо в зашифрованном файле + master key из env. Cloud KMS (AWS/Azure/Yandex) **не используем** — всё self-hosted.
+- Хранит **только публичные идентификаторы** ключей; приватники лежат в зашифрованном файле (AES-256-GCM, master key из env). Cloud KMS, Vault, HSM — не используем.
 - Ed25519 на NSec.Cryptography (быстрее) либо BouncyCastle (универсальнее).
 - Каждый шаблон лицензии имеет собственную **подписную keypair** → отзыв компрометированного ключа не ломает остальные продукты.
 
@@ -168,22 +168,21 @@
         │            └────┬─────┘  └────────┘  │
         │                 │                    │
         │                 ▼                    │
-        │           ┌──────────┐  ┌─────────┐  │
-        │           │  MinIO   │  │  Vault  │  │
-        │           │ (WAL+    │  │(secrets │  │
-        │           │ archives)│  │ + keys) │  │
-        │           └──────────┘  └─────────┘  │
+        │           ┌──────────────────────────┐  │
+        │           │  MinIO (WAL + archives,  │  │
+        │           │  encrypted key backups)  │  │
+        │           └──────────────────────────┘  │
         └─────────────────────────────────────┘
 ```
 
 - Один VM/контейнер на API (горизонтально масштабируется stateless'ом, если поднять второй хост).
 - Один Hangfire worker (или внутри того же процесса с лимитом thread'ов).
 - Postgres — **self-hosted в Docker** на той же VM (или отдельной); ежедневные `pg_basebackup` + continuous WAL → MinIO; PITR из MinIO.
-- Secrets — Vault или encrypted-file + master key из переменной окружения (загружается, например, через docker secret / systemd EnvironmentFile). Никаких облачных KMS.
+- Secrets — encrypted-file + master key из переменной окружения (docker secret / systemd EnvironmentFile). Никаких облачных KMS, Vault или HSM.
 - TLS: Cloudflare держит edge-сертификаты на `*.sigil.<base>`; origin — либо Cloudflare Tunnel (`cloudflared`), либо собственный сертификат Let's Encrypt + IP allow-list на firewall'е, разрешающий только IP-диапазоны Cloudflare.
 
 ## Что вынесем в отдельные сервисы позже
 
-- Signer Service → отдельный процесс с доступом к Vault Transit или PKCS#11 HSM (когда придёт enterprise-клиент).
+- Signer Service → отдельный процесс (если нагрузка подписания вырастет).
 - Public Client API → отдельный контейнер с собственным rate-limit (если нагрузка от SDK heartbeat'ов станет ≫ панели).
 - Billing → отдельный сервис при сложной тарификации.

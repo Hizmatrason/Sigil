@@ -21,6 +21,12 @@ public sealed class CompanyRepository : ICompanyRepository
             .ToListAsync(ct)
             .ContinueWith(t => (IReadOnlyList<Company>)t.Result, ct);
 
+    public Task<IReadOnlyList<Company>> GetAllAsync(CancellationToken ct = default)
+        => _db.Companies.AsNoTracking()
+            .OrderBy(c => c.Name)
+            .ToListAsync(ct)
+            .ContinueWith(t => (IReadOnlyList<Company>)t.Result, ct);
+
     public async Task<IReadOnlyList<Company>> GetSubtreeAsync(Guid rootId, CancellationToken ct = default)
     {
         var root = await _db.Companies.AsNoTracking()

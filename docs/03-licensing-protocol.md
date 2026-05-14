@@ -198,5 +198,5 @@ public sealed class SigilOptions
 | Hardware fingerprint | SHA-256 над нормализованным JSON | SDK |
 | Хеш паролей пользователей панели | Argon2id | Backend |
 | TLS | TLS 1.3 (Cloudflare edge) | Все API |
-| Хранение приватного ключа | KMS / Vault / зашифрованный файл с master key из env | Серверный signer |
+| Хранение приватного ключа | Зашифрованный файл (AES-256-GCM), master key из env | Серверный signer |
 | (Опц.) шифрование payload | AES-GCM с ключом в SDK | Не нужно для v1 |

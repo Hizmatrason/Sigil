@@ -13,10 +13,15 @@ public sealed class LicensesController : ControllerBase
     public LicensesController(LicenseService service) => _service = service;
 
     [HttpGet]
-    public async Task<IActionResult> GetByCompany([FromQuery] Guid companyId, CancellationToken ct)
+    public async Task<IActionResult> GetAll([FromQuery] Guid? companyId, CancellationToken ct)
     {
-        var list = await _service.GetByCompanyAsync(companyId, ct);
-        return Ok(list);
+        if (companyId.HasValue)
+        {
+            var list = await _service.GetByCompanyAsync(companyId.Value, ct);
+            return Ok(list);
+        }
+        var all = await _service.GetAllAsync(ct);
+        return Ok(all);
     }
 
     [HttpGet("{id:guid}")]
@@ -31,5 +36,30 @@ public sealed class LicensesController : ControllerBase
     {
         var result = await _service.IssueAsync(req, ct);
         return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/revoke")]
+    public async Task<IActionResult> Revoke(Guid id, [FromBody] LicenseRevokeRequest? req, CancellationToken ct)
+    {
+        var revoked = await _service.RevokeAsync(id, req?.Reason, ct);
+        return revoked ? NoContent() : NotFound();
+    }
+
+    [HttpGet("{id:guid}/download")]
+    public async Task<IActionResult> Download(Guid id, CancellationToken ct)
+    {
+        var dto = await _service.GetDownloadAsync(id, ct);
+        if (dto is null) return NotFound();
+
+        var json = System.Text.Json.JsonSerializer.Serialize(dto);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+        return File(bytes, "application/octet-stream", $"{dto.LicenseKey}.sigil");
+    }
+
+    [HttpGet("{id:guid}/public-key")]
+    public async Task<IActionResult> PublicKey(Guid id, CancellationToken ct)
+    {
+        var hex = await _service.GetPublicKeyAsync(id, ct);
+        return hex is null ? NotFound() : Ok(hex);
     }
 }

@@ -44,6 +44,12 @@ public sealed class CompanyService
         return list.Select(Map).ToList();
     }
 
+    public async Task<IReadOnlyList<CompanyResponse>> GetAllAsync(CancellationToken ct = default)
+    {
+        var list = await _repo.GetAllAsync(ct);
+        return list.Select(Map).ToList();
+    }
+
     public async Task<IReadOnlyList<CompanyResponse>> GetSubtreeAsync(Guid rootId, CancellationToken ct = default)
     {
         var list = await _repo.GetSubtreeAsync(rootId, ct);
@@ -52,4 +58,15 @@ public sealed class CompanyService
 
     private static CompanyResponse Map(Company c)
         => new(c.Id, c.Name, c.Slug, c.ParentId, c.Path, c.Depth, c.Status.ToString(), c.ContactEmail, c.CreatedAt);
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var company = await _repo.GetByIdAsync(id, ct);
+        if (company is null) return false;
+
+        company.Status = CompanyStatus.Archived;
+        company.UpdatedAt = DateTimeOffset.UtcNow;
+        await _repo.SaveChangesAsync(ct);
+        return true;
+    }
 }

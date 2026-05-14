@@ -11,12 +11,23 @@ export const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && window.location.pathname !== '/login') {
       window.location.href = '/login'
     }
     return Promise.reject(error)
   },
 )
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+
+export interface User {
+  id: string
+  email: string
+  displayName: string | null
+  isOperator: boolean
+}
+
+// ── Companies ─────────────────────────────────────────────────────────────
 
 export interface Company {
   id: string
@@ -24,81 +35,98 @@ export interface Company {
   slug: string
   parentId?: string
   path: string
+  depth: number
   status: string
+  contactEmail?: string
   createdAt: string
-  updatedAt: string
-}
-
-export interface LicenseTemplate {
-  id: string
-  companyId: string
-  name: string
-  description?: string
-  status: string
-  currentVersionId?: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface TemplateVersion {
-  id: string
-  templateId: string
-  version: number
-  maxActivations?: number
-  expiresDays?: number
-  features: Record<string, unknown>
-  limits: Record<string, unknown>
-  metadata: Record<string, unknown>
-  createdAt: string
-}
-
-export interface License {
-  id: string
-  companyId: string
-  templateId?: string
-  versionId?: string
-  licenseKey: string
-  status: string
-  maxActivations?: number
-  expiresAt?: string
-  features: Record<string, unknown>
-  limits: Record<string, unknown>
-  metadata: Record<string, unknown>
-  createdAt: string
-  updatedAt: string
-}
-
-export interface LicenseVersion {
-  id: string
-  licenseId: string
-  version: number
-  token: string
-  issuedAt: string
 }
 
 export interface CreateCompanyRequest {
   name: string
   slug: string
   parentId?: string
+  contactEmail?: string
+}
+
+// ── Templates ─────────────────────────────────────────────────────────────
+
+export interface LicenseTemplate {
+  id: string
+  companyId: string
+  name: string
+  productCode: string
+  description?: string
+  defaultOfflineDays: number
+  defaultValidityDays: number
+  status: string
+  currentVersionId?: string
+  createdAt: string
+}
+
+export interface TemplateVersion {
+  id: string
+  templateId: string
+  version: number
+  configSchema: string
+  defaults: string
+  signingKeyId: string
+  changelog?: string
+  createdAt: string
 }
 
 export interface CreateTemplateRequest {
   companyId: string
   name: string
+  productCode: string
   description?: string
-  features?: Record<string, unknown>
-  limits?: Record<string, unknown>
-  metadata?: Record<string, unknown>
-  maxActivations?: number
-  expiresDays?: number
+  defaultOfflineDays: number
+  defaultValidityDays: number
+}
+
+export interface UpdateTemplateRequest {
+  name?: string
+  productCode?: string
+  description?: string
+  defaultOfflineDays?: number
+  defaultValidityDays?: number
+}
+
+export interface CreateTemplateVersionRequest {
+  configSchema: string
+  defaults: string
+  changelog?: string
+}
+
+// ── Licenses ──────────────────────────────────────────────────────────────
+
+export interface License {
+  id: string
+  licenseKey: string
+  companyId: string
+  templateId: string
+  status: string
+  config: string
+  expiresAt?: string
+  issuedAt: string
+  activatedAt?: string
+  lastHeartbeatAt?: string
+}
+
+export interface LicenseTokenResponse {
+  licenseKey: string
+  token: string
+  publicKey: string
 }
 
 export interface IssueLicenseRequest {
   companyId: string
-  templateId?: string
-  maxActivations?: number
+  templateId: string
+  config: string
   expiresAt?: string
-  features?: Record<string, unknown>
-  limits?: Record<string, unknown>
-  metadata?: Record<string, unknown>
+  offlineDays?: number
+  hwFingerprint?: string
+}
+
+export interface RevokeLicenseRequest {
+  reason?: string
 }

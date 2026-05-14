@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Sigil.Application.Interfaces;
+using Sigil.Application.Services;
 using Sigil.Infrastructure.Data;
 using Sigil.Infrastructure.Signing;
 
@@ -62,31 +64,74 @@ try
     });
 
     // Repositories
-    builder.Services.AddScoped<Sigil.Application.Interfaces.ICompanyRepository, Sigil.Infrastructure.Repositories.CompanyRepository>();
-    builder.Services.AddScoped<Sigil.Application.Interfaces.ILicenseTemplateRepository, Sigil.Infrastructure.Repositories.LicenseTemplateRepository>();
-    builder.Services.AddScoped<Sigil.Application.Interfaces.ILicenseRepository, Sigil.Infrastructure.Repositories.LicenseRepository>();
+    builder.Services.AddScoped<ICompanyRepository, Sigil.Infrastructure.Repositories.CompanyRepository>();
+    builder.Services.AddScoped<ILicenseTemplateRepository, Sigil.Infrastructure.Repositories.LicenseTemplateRepository>();
+    builder.Services.AddScoped<ILicenseRepository, Sigil.Infrastructure.Repositories.LicenseRepository>();
+    builder.Services.AddScoped<IUserRepository, Sigil.Infrastructure.Repositories.UserRepository>();
 
     // Services
-    builder.Services.AddScoped<Sigil.Application.Services.CompanyService>();
-    builder.Services.AddScoped<Sigil.Application.Services.LicenseTemplateService>();
-    builder.Services.AddScoped<Sigil.Application.Services.LicenseService>();
+    builder.Services.AddScoped<CompanyService>();
+    builder.Services.AddScoped<LicenseTemplateService>();
+    builder.Services.AddScoped<LicenseService>();
+    builder.Services.AddScoped<AuthService>();
 
     // Signer
-    builder.Services.AddScoped<Sigil.Application.Interfaces.ISigner, Sigil.Infrastructure.Signing.EncryptedFileSigner>();
+    builder.Services.AddScoped<ISigner, EncryptedFileSigner>();
+
+    // Auth — cookie-based
+    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(options =>
+        {
+            options.Cookie.Name = "sigil.auth";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.ExpireTimeSpan = TimeSpan.FromDays(7);
+            options.SlidingExpiration = true;
+            options.LoginPath = "/login";
+            options.LogoutPath = "/api/v1/panel/auth/logout";
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = 401;
+                return Task.CompletedTask;
+            };
+        });
+    builder.Services.AddAuthorization();
+
+    // CORS — allow Vite dev server
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.WithOrigins("http://localhost:5173")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+    });
 
     // Health checks
     var connectionString = builder.Configuration.GetConnectionString("Default");
     builder.Services.AddHealthChecks()
         .AddNpgSql(connectionString!, name: "postgresql", tags: ["ready"]);
 
-    // Signing — EncryptedFileSigner reads SIGIL_MASTER_KEY env var
-    builder.Services.AddScoped<ISigner, EncryptedFileSigner>();
-
     builder.Services.AddControllers();
 
     var app = builder.Build();
 
+    // Seed initial operator user
+    using (var scope = app.Services.CreateScope())
+    {
+        var auth = scope.ServiceProvider.GetRequiredService<AuthService>();
+        var seedEmail = builder.Configuration["Seed:OperatorEmail"] ?? "admin@sigil.local";
+        var seedPassword = builder.Configuration["Seed:OperatorPassword"] ?? "changeme";
+        await auth.SeedOperatorAsync(seedEmail, seedPassword);
+    }
+
     app.UseSerilogRequestLogging();
+    app.UseCors();
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.MapControllers();
 
     app.MapHealthChecks("/health/live");

@@ -113,6 +113,60 @@ public sealed class LicenseService
         return list.Select(Map).ToList();
     }
 
+    public async Task<IReadOnlyList<LicenseResponse>> GetAllAsync(CancellationToken ct = default)
+    {
+        var list = await _licenseRepo.GetAllAsync(ct);
+        return list.Select(Map).ToList();
+    }
+
+    public async Task<bool> RevokeAsync(Guid id, string? reason, CancellationToken ct = default)
+    {
+        var license = await _licenseRepo.GetByIdAsync(id, ct);
+        if (license is null) return false;
+
+        license.Status = LicenseStatus.Revoked;
+        license.RevokedAt = DateTimeOffset.UtcNow;
+        license.RevocationReason = reason;
+        license.UpdatedAt = DateTimeOffset.UtcNow;
+        await _licenseRepo.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<LicenseDownloadDto?> GetDownloadAsync(Guid id, CancellationToken ct = default)
+    {
+        var license = await _licenseRepo.GetByIdAsync(id, ct);
+        if (license is null) return null;
+
+        var template = await _templateRepo.GetByIdAsync(license.TemplateId, ct);
+        if (template is null) return null;
+
+        var signingKey = template.SigningKeys.FirstOrDefault(k => k.Status == SigningKeyStatus.Active);
+        if (signingKey is null) return null;
+
+        var latestVersion = license.Versions.OrderByDescending(v => v.Version).FirstOrDefault();
+        if (latestVersion is null) return null;
+
+        var publicKey = await _signer.GetPublicKeyAsync(signingKey.Id, ct);
+        var publicKeyHex = Convert.ToHexString(publicKey).ToLowerInvariant();
+
+        return new LicenseDownloadDto(license.LicenseKey, latestVersion.SignedToken, publicKeyHex);
+    }
+
+    public async Task<string?> GetPublicKeyAsync(Guid licenseId, CancellationToken ct = default)
+    {
+        var license = await _licenseRepo.GetByIdAsync(licenseId, ct);
+        if (license is null) return null;
+
+        var template = await _templateRepo.GetByIdAsync(license.TemplateId, ct);
+        if (template is null) return null;
+
+        var signingKey = template.SigningKeys.FirstOrDefault(k => k.Status == SigningKeyStatus.Active);
+        if (signingKey is null) return null;
+
+        var publicKey = await _signer.GetPublicKeyAsync(signingKey.Id, ct);
+        return Convert.ToHexString(publicKey).ToLowerInvariant();
+    }
+
     private static string GenerateLicenseKey()
     {
         var bytes = RandomNumberGenerator.GetBytes(8);
@@ -148,6 +202,6 @@ public sealed class LicenseService
     }
 
     private static LicenseResponse Map(License l)
-        => new(l.Id, l.LicenseKey, l.CompanyId, l.TemplateId, l.Status.ToString(),
+        => new(l.Id, l.LicenseKey, l.CompanyId, l.TemplateId, l.Status.ToString(), l.Config,
                l.ExpiresAt, l.IssuedAt, l.ActivatedAt, l.LastHeartbeatAt);
 }

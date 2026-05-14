@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 
-interface User {
+export interface User {
   id: string
   email: string
-  displayName: string
+  displayName: string | null
   isOperator: boolean
 }
 

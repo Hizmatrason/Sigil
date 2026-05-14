@@ -9,27 +9,23 @@
                             │  operators    │ (сотрудники Sigil)
                             └───────────────┘
 
+  license_templates ──── 1..* ──► template_versions    (глобальные, не привязаны к компании)
+                                          │
+                                          │ 1
+                                          ▼
+                                     signing_keys (Ed25519 keypair per template)
+
   companies ◄──parent_id (self ref, tree)
        │
        │ 1..*                 1..*
        ├──── users           ────► role_assignments ────► roles
        │
        │ 1..*
-       ├──── license_templates ──── 1..* ──► template_versions
-       │                                            │
-       │                                            │ 1
-       │                                            ▼
-       │                                       signing_keys (Ed25519 keypair per template)
-       │
-       │ 1..*
        └──── licenses ──── 1..*  ──► license_versions (история изменений config)
-                  │
+                  │                         │
+                  │                         └──► template_version (ссылка на глобальный шаблон)
                   ├──── 1..*  ──► activations (HW fingerprint bindings)
                   └──── 1..*  ──► heartbeats
-
-  plans ──── 1..* ──► subscriptions ──── 1..* ──► invoices ──── 1..* ──► invoice_lines
-                              │
-                              └── attached to companies
 
   audit_log (полиморфно ссылается на любую сущность)
 ```
@@ -97,25 +93,23 @@ CREATE TABLE role_assignments (
 ```sql
 CREATE TABLE license_templates (
   id             uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
-  company_id     uuid NOT NULL REFERENCES companies(id),
   name           text NOT NULL,
-  product_code   text NOT NULL,                     -- стабильный ID продукта
+  product_code   text NOT NULL UNIQUE,              -- стабильный ID продукта; глобально уникален
   description    text,
   default_offline_days  int NOT NULL DEFAULT 30,
   default_validity_days int NOT NULL DEFAULT 365,
   status         text NOT NULL DEFAULT 'draft',     -- draft / active / archived
   current_version_id uuid,
   created_at     timestamptz NOT NULL DEFAULT now(),
-  updated_at     timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (company_id, product_code)
+  updated_at     timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE template_versions (
   id            uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
   template_id   uuid NOT NULL REFERENCES license_templates(id) ON DELETE CASCADE,
   version       int  NOT NULL,
-  config_schema jsonb NOT NULL,                     -- JSON Schema, по которой валидируется config лицензии
-  defaults      jsonb NOT NULL DEFAULT '{}',        -- значения по умолчанию
+  config_schema jsonb NOT NULL,                     -- JSON Schema структура полей; значения НЕ хранятся
+  defaults      jsonb NOT NULL DEFAULT '{}',        -- подсказки для UI (placeholder/description); не предзаполняются
   signing_key_id uuid NOT NULL REFERENCES signing_keys(id),
   changelog     text,
   created_by    uuid REFERENCES users(id),
@@ -123,6 +117,8 @@ CREATE TABLE template_versions (
   UNIQUE (template_id, version)
 );
 ```
+
+**Правило «пустых значений»:** шаблон описывает *структуру* конфигурации (поля, типы, ограничения), но никогда не хранит заполненных значений. При выпуске лицензии форма генерируется из `config_schema` с пустыми полями — оператор обязан заполнить их самостоятельно. `defaults` содержит только `description`/`placeholder` для UI. Реальные данные живут исключительно в `licenses.config`.
 
 Каждое изменение шаблона = новая версия. Существующие лицензии остаются на своей версии до явного «миграция config».
 
@@ -133,7 +129,7 @@ CREATE TABLE signing_keys (
   id              uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
   template_id     uuid REFERENCES license_templates(id) ON DELETE RESTRICT,
   public_key      bytea NOT NULL,                   -- 32 байта Ed25519
-  private_key_ref text NOT NULL,                    -- KMS key arn / vault path; никогда не лежит в БД сырым
+  private_key_ref text NOT NULL,                    -- путь к зашифрованному файлу на диске; никогда не лежит в БД сырым
   algorithm       text NOT NULL DEFAULT 'ed25519',
   status          text NOT NULL DEFAULT 'active',   -- active / rotating / retired / compromised
   not_before      timestamptz NOT NULL DEFAULT now(),
@@ -219,56 +215,6 @@ CREATE INDEX heartbeats_license_time_idx ON heartbeats(license_id, received_at D
 
 Heartbeat'ы быстро накапливаются → partitioning by month + retention 90 дней (Hangfire job).
 
-### Биллинг (см. [04-billing.md](04-billing.md))
-
-```sql
-CREATE TABLE plans (
-  id          uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
-  name        text NOT NULL,
-  code        text UNIQUE NOT NULL,
-  price_cents int  NOT NULL,
-  currency    text NOT NULL DEFAULT 'USD',
-  interval    text NOT NULL,                        -- month / year
-  features    jsonb NOT NULL DEFAULT '{}',          -- лимиты тарифа (max_licenses, max_templates...)
-  created_at  timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE subscriptions (
-  id            uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
-  company_id    uuid NOT NULL REFERENCES companies(id),
-  plan_id       uuid NOT NULL REFERENCES plans(id),
-  status        text NOT NULL,                      -- trialing / active / past_due / canceled
-  trial_end     timestamptz,
-  current_period_start timestamptz NOT NULL,
-  current_period_end   timestamptz NOT NULL,
-  cancel_at_period_end boolean NOT NULL DEFAULT false,
-  external_ref  text,                               -- Stripe subscription id (опц.)
-  created_at    timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE invoices (
-  id          uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
-  company_id  uuid NOT NULL REFERENCES companies(id),
-  subscription_id uuid REFERENCES subscriptions(id),
-  number      text UNIQUE NOT NULL,
-  status      text NOT NULL,                        -- draft / open / paid / void
-  total_cents int  NOT NULL,
-  currency    text NOT NULL,
-  issued_at   timestamptz NOT NULL DEFAULT now(),
-  due_at      timestamptz,
-  paid_at     timestamptz
-);
-
-CREATE TABLE invoice_lines (
-  id          uuid PRIMARY KEY DEFAULT uuid_generate_v7(),
-  invoice_id  uuid NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-  description text NOT NULL,
-  quantity    numeric(10,2) NOT NULL DEFAULT 1,
-  unit_cents  int NOT NULL,
-  amount_cents int NOT NULL
-);
-```
-
 ### `audit_log`
 
 ```sql
@@ -278,7 +224,7 @@ CREATE TABLE audit_log (
   actor_id    uuid REFERENCES users(id),
   actor_kind  text NOT NULL,                        -- user / system / client_sdk
   company_id  uuid REFERENCES companies(id),
-  entity_kind text NOT NULL,                        -- license / template / company / subscription...
+  entity_kind text NOT NULL,                        -- license / template / company / activation...
   entity_id   uuid,
   action      text NOT NULL,                        -- created / updated / revoked / signed / dns_provisioned ...
   diff        jsonb,                                -- before/after; для крупных — храним только хеш и ссылку в S3

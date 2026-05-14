@@ -54,7 +54,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t p-4">
-        <div className="mb-3 text-sm font-medium truncate">{user?.displayName}</div>
+        <div className="mb-3 text-sm font-medium truncate">{user?.displayName ?? user?.email ?? 'User'}</div>
         <Button variant="outline" className="w-full justify-start gap-2" onClick={() => logout()}>
           <LogOut className="h-4 w-4" />
           Logout
