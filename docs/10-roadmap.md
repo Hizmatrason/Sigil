@@ -6,13 +6,13 @@
 
 **Цель:** репозиторий, CI, миграции, "Hello World" health-check.
 
-- [ ] Создать solution и проекты (Domain / Application / Infrastructure / Api / Client / SharedKernel + тесты).
-- [ ] `Sigil.Api` отвечает `200 OK` на `/health`.
-- [ ] EF Core + Npgsql + первая миграция (расширения `pgcrypto`, `ltree`).
-- [ ] Docker-compose c Postgres.
-- [ ] GitHub Actions: build + unit tests + docker build.
-- [ ] Serilog → stdout, OpenTelemetry заглушка.
-- [ ] README с инструкцией «как запустить локально».
+- [x] Создать solution и проекты (Domain / Application / Infrastructure / Api / Client / SharedKernel + тесты).
+- [x] `Sigil.Api` отвечает `200 OK` на `/health`.
+- [x] EF Core + Npgsql + первая миграция (расширения `pgcrypto`, `ltree`).
+- [x] Docker-compose c Postgres.
+- [ ] CI (Gitea Actions / self-hosted): build + unit tests + docker build. // Не нужно
+- [x] Serilog → stdout, OpenTelemetry заглушка.
+- [x] README с инструкцией «как запустить локально».
 
 ## Фаза 1 — Ядро лицензирования (2–3 недели)
 

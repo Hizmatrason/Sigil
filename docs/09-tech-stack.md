@@ -3,8 +3,8 @@
 ## Backend
 
 ### Языки и фреймворки
-- **.NET 8** (LTS), C# 12.
-- **ASP.NET Core 8** — Controllers + Minimal APIs гибрид. Controllers для панели, Minimal APIs для client-API (он крошечный, ~5 endpoint'ов).
+- **.NET 10** (LTS), C# `latest` (via `LangVersion`).
+- **ASP.NET Core 10** — Controllers + Minimal APIs гибрид. Controllers для панели, Minimal APIs для client-API (он крошечный, ~5 endpoint'ов).
 - **EF Core 8** + **Npgsql.EntityFrameworkCore.PostgreSQL**.
 - **MediatR** — CQRS-like разделение команд/запросов (опционально, но рекомендую — упрощает тесты).
 - **FluentValidation** — валидация входящих DTO.

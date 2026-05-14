@@ -1,14 +1,37 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Sigil.Api.Tests;
 
-public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+/// <summary>
+/// Custom WebApplicationFactory that removes the Npgsql health check
+/// for environments where PostgreSQL is not available (unit tests).
+/// </summary>
+public sealed class SigilTestFactory : WebApplicationFactory<Program>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.ConfigureServices(services =>
+        {
+            // Replace HealthCheckServiceOptions to clear Npgsql registrations
+            // since no DB is available during unit tests.
+            services.Configure<HealthCheckServiceOptions>(options =>
+            {
+                options.Registrations.Clear();
+            });
+        });
+    }
+}
 
-    public HealthEndpointTests(WebApplicationFactory<Program> factory)
+public sealed class HealthEndpointTests : IClassFixture<SigilTestFactory>
+{
+    private readonly SigilTestFactory _factory;
+
+    public HealthEndpointTests(SigilTestFactory factory)
     {
         _factory = factory;
     }

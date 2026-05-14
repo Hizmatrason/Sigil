@@ -1,7 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using Sigil.Infrastructure.Data;
 
 const string ServiceName = "sigil-api";
 
@@ -47,7 +49,20 @@ try
             }
         });
 
-    builder.Services.AddHealthChecks();
+    // EF Core — Npgsql + snake_case naming convention
+    builder.Services.AddDbContext<SigilDbContext>(options =>
+    {
+        options.UseNpgsql(builder.Configuration.GetConnectionString("Default"), npgsql =>
+        {
+            npgsql.MigrationsAssembly(typeof(SigilDbContext).Assembly.FullName);
+        });
+        options.UseSnakeCaseNamingConvention();
+    });
+
+    // Health checks
+    var connectionString = builder.Configuration.GetConnectionString("Default");
+    builder.Services.AddHealthChecks()
+        .AddNpgSql(connectionString!, name: "postgresql", tags: ["ready"]);
 
     var app = builder.Build();
 
