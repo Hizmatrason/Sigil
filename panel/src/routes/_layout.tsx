@@ -1,6 +1,5 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { Sidebar } from '@/components/layout/sidebar'
-import { Header } from '@/components/layout/header'
 
 export const Route = createFileRoute('/_layout')({
   component: LayoutComponent,
@@ -25,14 +24,13 @@ export const Route = createFileRoute('/_layout')({
 
 function LayoutComponent() {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex flex-1 flex-col">
-        <Header />
-        <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto bg-zinc-50">
+        <div className="p-6">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

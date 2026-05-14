@@ -15,8 +15,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -40,7 +38,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, Copy, Check } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { StatusBadge } from '@/lib/status'
+import { Check, Copy, KeyRound, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 const issueSchema = z.object({
@@ -112,14 +112,10 @@ function LicensesPage() {
     formState: { errors },
   } = useForm<IssueForm>({
     resolver: zodResolver(issueSchema),
-    defaultValues: {
-      config: '{}',
-      offlineDays: 30,
-    },
+    defaultValues: { config: '{}', offlineDays: 30 },
   })
 
-  const selectedTemplateId = watch('templateId')
-  const selectedTemplate = templates?.find((t) => t.id === selectedTemplateId)
+  const selectedTemplate = templates?.find((t) => t.id === watch('templateId'))
 
   const onSubmit = (data: IssueForm) => {
     issueMutation.mutate({
@@ -142,8 +138,14 @@ function LicensesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Licenses</h2>
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-900">Licenses</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Manage and issue signed license tokens
+          </p>
+        </div>
         <Dialog open={open} onOpenChange={handleClose}>
           <DialogTrigger asChild>
             <Button>
@@ -159,11 +161,11 @@ function LicensesPage() {
               <IssuedTokenDisplay token={issuedToken} onClose={() => handleClose(false)} />
             ) : (
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label>Company</Label>
                   <Select onValueChange={(v) => setValue('companyId', v, { shouldValidate: true })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select company..." />
+                      <SelectValue placeholder="Select company…" />
                     </SelectTrigger>
                     <SelectContent>
                       {companies?.map((c) => (
@@ -178,16 +180,17 @@ function LicensesPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label>Template</Label>
                   <Select onValueChange={(v) => setValue('templateId', v, { shouldValidate: true })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select template..." />
+                      <SelectValue placeholder="Select template…" />
                     </SelectTrigger>
                     <SelectContent>
                       {templates?.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
-                          {t.name} ({t.productCode})
+                          {t.name}{' '}
+                          <span className="text-muted-foreground">({t.productCode})</span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -196,39 +199,52 @@ function LicensesPage() {
                     <p className="text-xs text-destructive">{errors.templateId.message}</p>
                   )}
                   {selectedTemplate && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-zinc-500">
                       Offline: {selectedTemplate.defaultOfflineDays}d · Validity:{' '}
                       {selectedTemplate.defaultValidityDays}d
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="config">Config (JSON)</Label>
-                  <Textarea id="config" {...register('config')} rows={4} className="font-mono text-xs" />
+                  <Textarea
+                    id="config"
+                    {...register('config')}
+                    rows={4}
+                    className="font-mono text-xs"
+                  />
                   {errors.config && (
                     <p className="text-xs text-destructive">{errors.config.message}</p>
                   )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="expiresAt">Expires At</Label>
                     <Input id="expiresAt" type="datetime-local" {...register('expiresAt')} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="offlineDays">Offline Days</Label>
-                    <Input id="offlineDays" type="number" {...register('offlineDays', { valueAsNumber: true })} />
+                    <Input
+                      id="offlineDays"
+                      type="number"
+                      {...register('offlineDays', { valueAsNumber: true })}
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="hwFingerprint">HW Fingerprint (optional)</Label>
-                  <Input id="hwFingerprint" {...register('hwFingerprint')} placeholder="Auto if empty" />
+                <div className="space-y-1.5">
+                  <Label htmlFor="hwFingerprint">HW Fingerprint</Label>
+                  <Input
+                    id="hwFingerprint"
+                    {...register('hwFingerprint')}
+                    placeholder="Optional — leave blank to skip"
+                  />
                 </div>
 
                 <Button type="submit" className="w-full" disabled={issueMutation.isPending}>
-                  {issueMutation.isPending ? 'Issuing...' : 'Issue License'}
+                  {issueMutation.isPending ? 'Issuing…' : 'Issue License'}
                 </Button>
               </form>
             )}
@@ -236,73 +252,119 @@ function LicensesPage() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">Loading...</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>License Key</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Template</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead>Issued</TableHead>
+      {/* Table */}
+      <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-zinc-50 hover:bg-zinc-50 border-zinc-200">
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                License Key
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                Company
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                Template
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                Status
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                Expires
+              </TableHead>
+              <TableHead className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                Issued
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i} className="border-zinc-100">
+                  <TableCell>
+                    <Skeleton className="h-4 w-36" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {licenses?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      No licenses yet. Issue one to get started.
+              ))
+            ) : licenses?.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={6}>
+                  <div className="flex flex-col items-center py-14 text-center">
+                    <div className="rounded-full bg-zinc-100 p-3.5">
+                      <KeyRound className="h-6 w-6 text-zinc-400" />
+                    </div>
+                    <p className="mt-3 text-sm font-medium text-zinc-700">No licenses yet</p>
+                    <p className="mt-1 text-sm text-zinc-400">
+                      Issue your first license to get started.
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              licenses?.map((license) => {
+                const company = companies?.find((c) => c.id === license.companyId)
+                const template = templates?.find((t) => t.id === license.templateId)
+                return (
+                  <TableRow
+                    key={license.id}
+                    className="border-zinc-100 hover:bg-zinc-50/50"
+                  >
+                    <TableCell>
+                      <Link
+                        to="/licenses/$licenseId"
+                        params={{ licenseId: license.id }}
+                        className="font-mono text-sm font-medium text-zinc-800 hover:text-indigo-600 transition-colors"
+                      >
+                        {license.licenseKey}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-sm text-zinc-600">
+                      {company?.name ?? (
+                        <span className="text-zinc-400 font-mono text-xs">
+                          {license.companyId.slice(0, 8)}…
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-zinc-600">
+                      {template?.name ?? (
+                        <span className="text-zinc-400 font-mono text-xs">
+                          {license.templateId.slice(0, 8)}…
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={license.status} />
+                    </TableCell>
+                    <TableCell className="text-sm text-zinc-500">
+                      {license.expiresAt
+                        ? new Date(license.expiresAt).toLocaleDateString()
+                        : <span className="text-zinc-300">—</span>}
+                    </TableCell>
+                    <TableCell className="text-sm text-zinc-500">
+                      {new Date(license.issuedAt).toLocaleDateString()}
                     </TableCell>
                   </TableRow>
-                )}
-                {licenses?.map((license) => {
-                  const company = companies?.find((c) => c.id === license.companyId)
-                  const template = templates?.find((t) => t.id === license.templateId)
-                  return (
-                    <TableRow key={license.id}>
-                      <TableCell>
-                        <Link
-                          to="/licenses/$licenseId"
-                          params={{ licenseId: license.id }}
-                          className="font-mono text-sm hover:underline"
-                        >
-                          {license.licenseKey}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{company?.name ?? license.companyId}</TableCell>
-                      <TableCell>{template?.name ?? license.templateId}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            license.status === 'Active'
-                              ? 'default'
-                              : license.status === 'Revoked'
-                                ? 'destructive'
-                                : 'secondary'
-                          }
-                        >
-                          {license.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {license.expiresAt
-                          ? new Date(license.expiresAt).toLocaleDateString()
-                          : '—'}
-                      </TableCell>
-                      <TableCell>{new Date(license.issuedAt).toLocaleDateString()}</TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
@@ -326,62 +388,84 @@ function IssuedTokenDisplay({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
-        <p className="text-sm font-medium text-green-600">✓ License issued successfully</p>
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-sm font-medium text-emerald-700">
+        ✓ License issued and signed successfully
+      </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">License Key</Label>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2"
-              onClick={() => copy('key', token.licenseKey)}
-            >
-              {copied === 'key' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            </Button>
-          </div>
-          <code className="block rounded bg-background p-2 text-sm font-mono">{token.licenseKey}</code>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Signed Token</Label>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2"
-              onClick={() => copy('token', token.token)}
-            >
-              {copied === 'token' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            </Button>
-          </div>
-          <pre className="rounded bg-background p-2 text-xs font-mono overflow-auto max-h-32 break-all">
-            {token.token}
-          </pre>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Public Key (hex)</Label>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2"
-              onClick={() => copy('pubkey', token.publicKey)}
-            >
-              {copied === 'pubkey' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            </Button>
-          </div>
-          <code className="block rounded bg-background p-2 text-xs font-mono break-all">
-            {token.publicKey}
-          </code>
-        </div>
+      <div className="space-y-3">
+        <CopyField
+          label="License Key"
+          value={token.licenseKey}
+          isCopied={copied === 'key'}
+          onCopy={() => copy('key', token.licenseKey)}
+          mono
+        />
+        <CopyField
+          label="Signed Token"
+          value={token.token}
+          isCopied={copied === 'token'}
+          onCopy={() => copy('token', token.token)}
+          mono
+          multiline
+        />
+        <CopyField
+          label="Public Key (hex)"
+          value={token.publicKey}
+          isCopied={copied === 'pubkey'}
+          onCopy={() => copy('pubkey', token.publicKey)}
+          mono
+        />
       </div>
 
       <Button className="w-full" onClick={onClose}>
         Done
       </Button>
+    </div>
+  )
+}
+
+function CopyField({
+  label,
+  value,
+  isCopied,
+  onCopy,
+  mono,
+  multiline,
+}: {
+  label: string
+  value: string
+  isCopied: boolean
+  onCopy: () => void
+  mono?: boolean
+  multiline?: boolean
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-zinc-500">{label}</span>
+        <button
+          onClick={onCopy}
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition-colors"
+        >
+          {isCopied ? (
+            <Check className="h-3 w-3 text-emerald-500" />
+          ) : (
+            <Copy className="h-3 w-3" />
+          )}
+          {isCopied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      {multiline ? (
+        <pre className="rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs font-mono overflow-auto max-h-24 break-all text-zinc-700">
+          {value}
+        </pre>
+      ) : (
+        <div
+          className={`rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs break-all text-zinc-700 ${mono ? 'font-mono' : ''}`}
+        >
+          {value}
+        </div>
+      )}
     </div>
   )
 }

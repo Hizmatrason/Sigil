@@ -12,8 +12,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
@@ -34,7 +32,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Edit, Archive, Plus } from 'lucide-react'
+import { StatusBadge } from '@/lib/status'
+import { Archive, ArrowLeft, Edit, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/_layout/templates/$templateId')({
@@ -63,7 +62,6 @@ function TemplateDetailPage() {
     },
   })
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (req: UpdateTemplateRequest) => {
       const { data } = await api.put<LicenseTemplate>(`/panel/templates/${templateId}`, req)
@@ -78,7 +76,6 @@ function TemplateDetailPage() {
     onError: () => toast.error('Failed to update template'),
   })
 
-  // Archive mutation
   const archiveMutation = useMutation({
     mutationFn: async () => {
       await api.delete(`/panel/templates/${templateId}`)
@@ -91,7 +88,6 @@ function TemplateDetailPage() {
     onError: () => toast.error('Failed to archive template'),
   })
 
-  // Create version mutation
   const versionMutation = useMutation({
     mutationFn: async (req: CreateTemplateVersionRequest) => {
       const { data } = await api.post<TemplateVersion>(
@@ -109,129 +105,152 @@ function TemplateDetailPage() {
     onError: () => toast.error('Failed to create version'),
   })
 
-  if (isLoading || !template) return <div className="p-8 text-center text-muted-foreground">Loading...</div>
+  if (isLoading || !template) {
+    return (
+      <div className="flex items-center justify-center py-20 text-sm text-zinc-400">
+        Loading…
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link to="/templates" className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5" />
+      <div className="flex items-center gap-3">
+        <Link
+          to="/templates"
+          className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Link>
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold tracking-tight">{template.name}</h2>
-          <p className="text-sm text-muted-foreground">
-            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{template.productCode}</code>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-semibold text-zinc-900">{template.name}</h1>
+            <StatusBadge status={template.status} />
+          </div>
+          <p className="mt-0.5 text-sm text-zinc-500">
+            <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">{template.productCode}</code>
+            {template.description && (
+              <span className="ml-2 text-zinc-400">{template.description}</span>
+            )}
           </p>
         </div>
-        <div className="flex gap-2">
-          {template.status !== 'Archived' && (
-            <>
-              <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Edit className="mr-2 h-4 w-4" /> Edit
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>Edit Template</DialogTitle>
-                  </DialogHeader>
-                  <EditTemplateForm
-                    template={template}
-                    onSubmit={(data) => updateMutation.mutate(data)}
-                    isPending={updateMutation.isPending}
-                  />
-                </DialogContent>
-              </Dialog>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-destructive">
-                    <Archive className="mr-2 h-4 w-4" /> Archive
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Archive template?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will archive &ldquo;{template.name}&rdquo;. Existing licenses remain unaffected.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => archiveMutation.mutate()}
-                      className="bg-destructive text-destructive-foreground"
-                    >
-                      Archive
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
-        </div>
+        {template.status !== 'Archived' && (
+          <div className="flex gap-2">
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Edit className="mr-1.5 h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Edit Template</DialogTitle>
+                </DialogHeader>
+                <EditTemplateForm
+                  template={template}
+                  onSubmit={(data) => updateMutation.mutate(data)}
+                  isPending={updateMutation.isPending}
+                />
+              </DialogContent>
+            </Dialog>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-zinc-500 hover:text-destructive">
+                  <Archive className="mr-1.5 h-3.5 w-3.5" />
+                  Archive
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Archive template?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will archive &ldquo;{template.name}&rdquo;. Existing licenses
+                    remain unaffected and will continue to work.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => archiveMutation.mutate()}
+                    className="bg-destructive text-destructive-foreground"
+                  >
+                    Archive
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
       <Tabs defaultValue="details">
-        <TabsList>
+        <TabsList className="bg-zinc-100">
           <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="versions">Versions ({versions?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value="versions">
+            Versions
+            {versions && versions.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-zinc-200 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600">
+                {versions.length}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="details" className="mt-4">
+        <TabsContent value="details" className="mt-5">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>General</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <DetailRow label="Status">
-                  <Badge variant={template.status === 'Active' ? 'default' : 'secondary'}>
-                    {template.status}
-                  </Badge>
-                </DetailRow>
-                <DetailRow label="Product Code">
-                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{template.productCode}</code>
-                </DetailRow>
-                <DetailRow label="Description">
-                  {template.description || <span className="text-muted-foreground">—</span>}
-                </DetailRow>
-              </CardContent>
-            </Card>
+            <div className="rounded-xl border border-zinc-200 bg-white p-5">
+              <h3 className="mb-4 text-sm font-semibold text-zinc-900">General</h3>
+              <div className="space-y-2.5">
+                <Row label="Status">
+                  <StatusBadge status={template.status} />
+                </Row>
+                <Row label="Product Code">
+                  <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
+                    {template.productCode}
+                  </code>
+                </Row>
+                <Row label="Description">
+                  {template.description || (
+                    <span className="text-zinc-300">—</span>
+                  )}
+                </Row>
+                <Row label="Created">
+                  {new Date(template.createdAt).toLocaleString()}
+                </Row>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Defaults</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <DetailRow label="Offline Days">{template.defaultOfflineDays} days</DetailRow>
-                <DetailRow label="Validity Days">{template.defaultValidityDays} days</DetailRow>
-                <DetailRow label="Current Version">
+            <div className="rounded-xl border border-zinc-200 bg-white p-5">
+              <h3 className="mb-4 text-sm font-semibold text-zinc-900">Defaults</h3>
+              <div className="space-y-2.5">
+                <Row label="Offline Days">{template.defaultOfflineDays} days</Row>
+                <Row label="Validity Days">{template.defaultValidityDays} days</Row>
+                <Row label="Current Version">
                   {template.currentVersionId ? (
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                    <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
                       {template.currentVersionId.slice(0, 8)}…
                     </code>
                   ) : (
-                    <span className="text-muted-foreground">None</span>
+                    <span className="text-amber-600 text-xs">No version yet</span>
                   )}
-                </DetailRow>
-                <DetailRow label="Created">
-                  {new Date(template.createdAt).toLocaleString()}
-                </DetailRow>
-              </CardContent>
-            </Card>
+                </Row>
+              </div>
+            </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="versions" className="mt-4 space-y-4">
-          <div className="flex justify-end">
+        <TabsContent value="versions" className="mt-5">
+          <div className="mb-4 flex justify-end">
             <Dialog open={versionOpen} onOpenChange={setVersionOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
-                  <Plus className="mr-2 h-4 w-4" /> New Version
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  New Version
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
@@ -247,41 +266,44 @@ function TemplateDetailPage() {
           </div>
 
           {versions?.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                No versions yet. Create one to define a config schema.
-              </CardContent>
-            </Card>
+            <div className="flex flex-col items-center rounded-xl border border-dashed border-zinc-200 py-14 text-center">
+              <p className="text-sm font-medium text-zinc-500">No versions yet</p>
+              <p className="mt-1 text-sm text-zinc-400">
+                Create a version to define a config schema.
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
               {versions?.map((v) => (
-                <Card key={v.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline">v{v.version}</Badge>
-                        {v.changelog && <span className="text-sm">{v.changelog}</span>}
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(v.createdAt).toLocaleString()}
+                <div key={v.id} className="rounded-xl border border-zinc-200 bg-white p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-semibold text-zinc-600">
+                        v{v.version}
                       </span>
+                      {v.changelog && (
+                        <span className="text-sm text-zinc-600">{v.changelog}</span>
+                      )}
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Config Schema</p>
-                        <pre className="rounded bg-muted p-2 text-xs overflow-auto max-h-40">
-                          {formatJson(v.configSchema)}
-                        </pre>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-1">Defaults</p>
-                        <pre className="rounded bg-muted p-2 text-xs overflow-auto max-h-40">
-                          {formatJson(v.defaults)}
-                        </pre>
-                      </div>
+                    <span className="text-xs text-zinc-400">
+                      {new Date(v.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium text-zinc-400">Config Schema</p>
+                      <pre className="rounded-lg border border-zinc-100 bg-zinc-50 p-2.5 text-xs font-mono overflow-auto max-h-40 text-zinc-600">
+                        {formatJson(v.configSchema)}
+                      </pre>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium text-zinc-400">Defaults</p>
+                      <pre className="rounded-lg border border-zinc-100 bg-zinc-50 p-2.5 text-xs font-mono overflow-auto max-h-40 text-zinc-600">
+                        {formatJson(v.defaults)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -291,13 +313,11 @@ function TemplateDetailPage() {
   )
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span>{children}</span>
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <span className="shrink-0 text-zinc-400">{label}</span>
+      <span className="text-right text-zinc-700">{children}</span>
     </div>
   )
 }
@@ -309,8 +329,6 @@ function formatJson(str: string): string {
     return str
   }
 }
-
-// ── Edit Form ─────────────────────────────────────────────────────────────
 
 function EditTemplateForm({
   template,
@@ -333,36 +351,42 @@ function EditTemplateForm({
 
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="name">Name</Label>
         <Input id="name" {...register('name')} />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="productCode">Product Code</Label>
-        <Input id="productCode" {...register('productCode')} />
+        <Input id="productCode" {...register('productCode')} className="font-mono" />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="description">Description</Label>
         <Input id="description" {...register('description')} />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="defaultOfflineDays">Offline Days</Label>
-          <Input id="defaultOfflineDays" type="number" {...register('defaultOfflineDays', { valueAsNumber: true })} />
+          <Input
+            id="defaultOfflineDays"
+            type="number"
+            {...register('defaultOfflineDays', { valueAsNumber: true })}
+          />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="defaultValidityDays">Validity Days</Label>
-          <Input id="defaultValidityDays" type="number" {...register('defaultValidityDays', { valueAsNumber: true })} />
+          <Input
+            id="defaultValidityDays"
+            type="number"
+            {...register('defaultValidityDays', { valueAsNumber: true })}
+          />
         </div>
       </div>
       <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? 'Saving...' : 'Save Changes'}
+        {isPending ? 'Saving…' : 'Save Changes'}
       </Button>
     </form>
   )
 }
-
-// ── Create Version Form ───────────────────────────────────────────────────
 
 function CreateVersionForm({
   onSubmit,
@@ -372,28 +396,38 @@ function CreateVersionForm({
   isPending: boolean
 }) {
   const { register, handleSubmit } = useForm<CreateTemplateVersionRequest>({
-    defaultValues: {
-      configSchema: '{}',
-      defaults: '{}',
-    },
+    defaultValues: { configSchema: '{}', defaults: '{}' },
   })
 
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="configSchema">Config Schema (JSON)</Label>
-        <Textarea id="configSchema" {...register('configSchema')} rows={6} className="font-mono text-xs" />
+      <div className="space-y-1.5">
+        <Label htmlFor="configSchema">Config Schema (JSON Schema)</Label>
+        <Textarea
+          id="configSchema"
+          {...register('configSchema')}
+          rows={6}
+          className="font-mono text-xs"
+        />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="defaults">Defaults (JSON)</Label>
-        <Textarea id="defaults" {...register('defaults')} rows={6} className="font-mono text-xs" />
+      <div className="space-y-1.5">
+        <Label htmlFor="defaults">
+          Defaults{' '}
+          <span className="text-zinc-400 font-normal text-xs">(UI hints — not pre-filled values)</span>
+        </Label>
+        <Textarea
+          id="defaults"
+          {...register('defaults')}
+          rows={4}
+          className="font-mono text-xs"
+        />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="changelog">Changelog</Label>
         <Input id="changelog" {...register('changelog')} placeholder="What changed in this version?" />
       </div>
       <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? 'Creating...' : 'Create Version'}
+        {isPending ? 'Creating…' : 'Create Version'}
       </Button>
     </form>
   )

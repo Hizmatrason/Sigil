@@ -1,15 +1,10 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import {
-  api,
-  type License,
-  type Company,
-  type LicenseTemplate,
-} from '@/lib/api'
+import { api, type License, type Company, type LicenseTemplate } from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,9 +16,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ArrowLeft, ShieldOff, Download, Key } from 'lucide-react'
+import { StatusBadge } from '@/lib/status'
+import { ArrowLeft, Download, Key, ShieldOff } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/_layout/licenses/$licenseId')({
@@ -104,17 +98,15 @@ function LicenseDetailPage() {
   })
 
   if (isLoading || !license) {
-    return <div className="p-8 text-center text-muted-foreground">Loading...</div>
+    return (
+      <div className="flex items-center justify-center py-20 text-sm text-zinc-400">
+        Loading…
+      </div>
+    )
   }
 
   const company = companies?.find((c) => c.id === license.companyId)
   const template = templates?.find((t) => t.id === license.templateId)
-
-  const statusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
-    Active: 'default',
-    Expired: 'secondary',
-    Revoked: 'destructive',
-  }
 
   let configObj: Record<string, unknown> = {}
   try {
@@ -126,134 +118,146 @@ function LicenseDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link to="/licenses" className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5" />
+      <div className="flex items-center gap-3">
+        <Link
+          to="/licenses"
+          className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold tracking-tight font-mono">{license.licenseKey}</h2>
-            <Badge variant={statusVariant[license.status] ?? 'secondary'}>
-              {license.status}
-            </Badge>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-mono text-xl font-semibold text-zinc-900">{license.licenseKey}</h1>
+            <StatusBadge status={license.status} />
           </div>
-          <p className="text-sm text-muted-foreground">
-            {company?.name ?? 'Unknown'} · {template?.name ?? 'Unknown template'}
+          <p className="mt-0.5 text-sm text-zinc-500">
+            {company?.name ?? 'Unknown company'}
+            {template && (
+              <>
+                {' · '}
+                <Link
+                  to="/templates/$templateId"
+                  params={{ templateId: template.id }}
+                  className="hover:text-indigo-600 transition-colors"
+                >
+                  {template.name}
+                </Link>
+              </>
+            )}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => downloadMutation.mutate()}
-          disabled={downloadMutation.isPending}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          .sigil
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => downloadPubKeyMutation.mutate()}
-          disabled={downloadPubKeyMutation.isPending}
-        >
-          <Key className="mr-2 h-4 w-4" />
-          PubKey
-        </Button>
-        {license.status === 'Active' && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                <ShieldOff className="mr-2 h-4 w-4" />
-                Revoke
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Revoke License?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. The license will be permanently revoked.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="space-y-2">
-                <Label htmlFor="reason">Reason (optional)</Label>
-                <Input
-                  id="reason"
-                  value={revokeReason}
-                  onChange={(e) => setRevokeReason(e.target.value)}
-                  placeholder="Enter revocation reason..."
-                />
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => revokeMutation.mutate(revokeReason)}
-                  className="bg-destructive text-destructive-foreground"
-                >
-                  {revokeMutation.isPending ? 'Revoking...' : 'Revoke License'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadMutation.mutate()}
+            disabled={downloadMutation.isPending}
+          >
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+            .sigil
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadPubKeyMutation.mutate()}
+            disabled={downloadPubKeyMutation.isPending}
+          >
+            <Key className="mr-1.5 h-3.5 w-3.5" />
+            Public key
+          </Button>
+          {license.status === 'Active' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <ShieldOff className="mr-1.5 h-3.5 w-3.5" />
+                  Revoke
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Revoke license?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. The license will be permanently revoked and
+                    the client will be blocked at the next heartbeat.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-1.5">
+                  <Label htmlFor="reason">Reason (optional)</Label>
+                  <Input
+                    id="reason"
+                    value={revokeReason}
+                    onChange={(e) => setRevokeReason(e.target.value)}
+                    placeholder="Enter revocation reason…"
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => revokeMutation.mutate(revokeReason)}
+                    className="bg-destructive text-destructive-foreground"
+                    disabled={revokeMutation.isPending}
+                  >
+                    {revokeMutation.isPending ? 'Revoking…' : 'Revoke License'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
-      {/* Details */}
+      {/* Details grid */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <DetailRow label="Company">{company?.name ?? license.companyId}</DetailRow>
-            <DetailRow label="Template">{template?.name ?? license.templateId}</DetailRow>
-            <DetailRow label="Status">
-              <Badge variant={statusVariant[license.status] ?? 'secondary'}>
-                {license.status}
-              </Badge>
-            </DetailRow>
-            <DetailRow label="Issued">
-              {new Date(license.issuedAt).toLocaleString()}
-            </DetailRow>
+        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+          <h2 className="mb-4 text-sm font-semibold text-zinc-900">Details</h2>
+          <div className="space-y-2.5">
+            <Row label="Company">{company?.name ?? license.companyId}</Row>
+            <Row label="Template">{template?.name ?? license.templateId}</Row>
+            <Row label="Status">
+              <StatusBadge status={license.status} />
+            </Row>
+            <Row label="Issued">{new Date(license.issuedAt).toLocaleString()}</Row>
             {license.activatedAt && (
-              <DetailRow label="Activated">
-                {new Date(license.activatedAt).toLocaleString()}
-              </DetailRow>
+              <Row label="Activated">{new Date(license.activatedAt).toLocaleString()}</Row>
             )}
             {license.expiresAt && (
-              <DetailRow label="Expires">
-                {new Date(license.expiresAt).toLocaleString()}
-              </DetailRow>
+              <Row label="Expires">
+                <span
+                  className={
+                    new Date(license.expiresAt) < new Date()
+                      ? 'text-red-600'
+                      : undefined
+                  }
+                >
+                  {new Date(license.expiresAt).toLocaleString()}
+                </span>
+              </Row>
             )}
             {license.lastHeartbeatAt && (
-              <DetailRow label="Last Heartbeat">
+              <Row label="Last heartbeat">
                 {new Date(license.lastHeartbeatAt).toLocaleString()}
-              </DetailRow>
+              </Row>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="rounded bg-muted p-3 text-xs font-mono overflow-auto max-h-64">
-              {JSON.stringify(configObj, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-zinc-200 bg-white p-5">
+          <h2 className="mb-4 text-sm font-semibold text-zinc-900">Configuration</h2>
+          <pre className="rounded-lg border border-zinc-100 bg-zinc-50 p-3.5 text-xs font-mono overflow-auto max-h-72 text-zinc-700 leading-relaxed">
+            {JSON.stringify(configObj, null, 2)}
+          </pre>
+        </div>
       </div>
     </div>
   )
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span>{children}</span>
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <span className="shrink-0 text-zinc-400">{label}</span>
+      <span className="text-right text-zinc-700">{children}</span>
     </div>
   )
 }
