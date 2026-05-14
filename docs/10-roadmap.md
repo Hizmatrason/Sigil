@@ -18,15 +18,15 @@
 
 **Цель:** можно вручную выпустить лицензию через API, клиент-SDK её проверяет оффлайн.
 
-- [ ] Сущности: `Company` (tree), `User`, `LicenseTemplate`, `TemplateVersion`, `SigningKey`, `License`, `LicenseVersion`.
-- [ ] `EncryptedFileSigner` + master key из env.
-- [ ] Endpoint'ы Panel API: companies CRUD, templates CRUD, licenses CRUD (без UI, через curl/Postman).
-- [ ] Формат токена (header.payload.signature) + сериализация.
-- [ ] Подпись Ed25519 через NSec.
-- [ ] **`Sigil.Client` SDK** (.NET): парсинг, проверка подписи, проверка `exp`, статусы.
+- [x] Сущности: `Company` (tree), `User`, `LicenseTemplate`, `TemplateVersion`, `SigningKey`, `License`, `LicenseVersion`.
+- [x] `EncryptedFileSigner` + master key из env.
+- [x] Endpoint'ы Panel API: companies CRUD, templates CRUD, licenses CRUD (без UI, через curl/Postman).
+- [x] Формат токена (header.payload.signature) + сериализация.
+- [x] Подпись Ed25519 через NSec.
+- [x] **`Sigil.Client` SDK** (.NET): парсинг, проверка подписи, проверка `exp`, статусы.
 - [ ] Простейший консольный sample-проект, демонстрирующий проверку.
-- [ ] Unit tests на signer + SDK (golden vectors).
-- [ ] Integration tests с Testcontainers.
+- [ ] Unit tests на signer + SDK (golden vectors) — не делаем (решение: без unit-тестов).
+- [x] Integration tests с Testcontainers (DatabaseMigrationTests).
 
 ## Фаза 2 — Веб-панель MVP (3–4 недели)
 

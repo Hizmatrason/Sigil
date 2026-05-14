@@ -1,0 +1,37 @@
+using Microsoft.EntityFrameworkCore;
+using Sigil.Application.Interfaces;
+using Sigil.Domain.Entities;
+using Sigil.Infrastructure.Data;
+
+namespace Sigil.Infrastructure.Repositories;
+
+public sealed class LicenseTemplateRepository : ILicenseTemplateRepository
+{
+    private readonly SigilDbContext _db;
+
+    public LicenseTemplateRepository(SigilDbContext db) => _db = db;
+
+    public Task<LicenseTemplate?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => _db.LicenseTemplates.AsNoTracking()
+            .Include(t => t.SigningKeys)
+            .FirstOrDefaultAsync(t => t.Id == id, ct);
+
+    public Task<IReadOnlyList<LicenseTemplate>> GetByCompanyAsync(Guid companyId, CancellationToken ct = default)
+        => _db.LicenseTemplates.AsNoTracking()
+            .Where(t => t.CompanyId == companyId)
+            .OrderBy(t => t.Name)
+            .ToListAsync(ct)
+            .ContinueWith(t => (IReadOnlyList<LicenseTemplate>)t.Result, ct);
+
+    public Task<TemplateVersion?> GetVersionAsync(Guid templateId, int version, CancellationToken ct = default)
+        => _db.TemplateVersions.AsNoTracking()
+            .FirstOrDefaultAsync(v => v.TemplateId == templateId && v.Version == version, ct);
+
+    public async Task AddAsync(LicenseTemplate entity, CancellationToken ct = default)
+    {
+        await _db.LicenseTemplates.AddAsync(entity, ct);
+    }
+
+    public Task SaveChangesAsync(CancellationToken ct = default)
+        => _db.SaveChangesAsync(ct);
+}

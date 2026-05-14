@@ -3,7 +3,9 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using Sigil.Application.Interfaces;
 using Sigil.Infrastructure.Data;
+using Sigil.Infrastructure.Signing;
 
 const string ServiceName = "sigil-api";
 
@@ -59,14 +61,33 @@ try
         options.UseSnakeCaseNamingConvention();
     });
 
+    // Repositories
+    builder.Services.AddScoped<Sigil.Application.Interfaces.ICompanyRepository, Sigil.Infrastructure.Repositories.CompanyRepository>();
+    builder.Services.AddScoped<Sigil.Application.Interfaces.ILicenseTemplateRepository, Sigil.Infrastructure.Repositories.LicenseTemplateRepository>();
+    builder.Services.AddScoped<Sigil.Application.Interfaces.ILicenseRepository, Sigil.Infrastructure.Repositories.LicenseRepository>();
+
+    // Services
+    builder.Services.AddScoped<Sigil.Application.Services.CompanyService>();
+    builder.Services.AddScoped<Sigil.Application.Services.LicenseTemplateService>();
+    builder.Services.AddScoped<Sigil.Application.Services.LicenseService>();
+
+    // Signer
+    builder.Services.AddScoped<Sigil.Application.Interfaces.ISigner, Sigil.Infrastructure.Signing.EncryptedFileSigner>();
+
     // Health checks
     var connectionString = builder.Configuration.GetConnectionString("Default");
     builder.Services.AddHealthChecks()
         .AddNpgSql(connectionString!, name: "postgresql", tags: ["ready"]);
 
+    // Signing — EncryptedFileSigner reads SIGIL_MASTER_KEY env var
+    builder.Services.AddScoped<ISigner, EncryptedFileSigner>();
+
+    builder.Services.AddControllers();
+
     var app = builder.Build();
 
     app.UseSerilogRequestLogging();
+    app.MapControllers();
 
     app.MapHealthChecks("/health/live");
     app.MapHealthChecks("/health/ready");

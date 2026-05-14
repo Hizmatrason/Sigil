@@ -7,11 +7,4 @@
     <Project Path="src/Sigil.Infrastructure/Sigil.Infrastructure.csproj" />
     <Project Path="src/Sigil.SharedKernel/Sigil.SharedKernel.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Sigil.Api.Tests/Sigil.Api.Tests.csproj" />
-    <Project Path="tests/Sigil.Application.Tests/Sigil.Application.Tests.csproj" />
-    <Project Path="tests/Sigil.Client.Tests/Sigil.Client.Tests.csproj" />
-    <Project Path="tests/Sigil.Domain.Tests/Sigil.Domain.Tests.csproj" />
-    <Project Path="tests/Sigil.Infrastructure.Tests/Sigil.Infrastructure.Tests.csproj" />
-  </Folder>
 </Solution>
