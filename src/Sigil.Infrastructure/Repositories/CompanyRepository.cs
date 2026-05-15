@@ -12,7 +12,7 @@ public sealed class CompanyRepository : ICompanyRepository
     public CompanyRepository(SigilDbContext db) => _db = db;
 
     public Task<Company?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
+        => _db.Companies.FirstOrDefaultAsync(c => c.Id == id, ct);
 
     public Task<IReadOnlyList<Company>> GetByParentAsync(Guid? parentId, CancellationToken ct = default)
         => _db.Companies.AsNoTracking()

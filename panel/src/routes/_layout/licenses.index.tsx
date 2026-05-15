@@ -555,9 +555,9 @@ function CopyField({
   multiline?: boolean
 }) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    <div className="min-w-0 space-y-1">
+      <div className="flex items-center justify-between gap-2">
+        <span className="shrink-0 text-xs font-medium text-muted-foreground">{label}</span>
         <button
           onClick={onCopy}
           className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -571,12 +571,12 @@ function CopyField({
         </button>
       </div>
       {multiline ? (
-        <pre className="rounded-lg border border-border bg-muted/20 p-2.5 text-xs font-mono overflow-auto max-h-24 break-all text-foreground/80">
+        <pre className="w-full max-w-full overflow-x-auto rounded-lg border border-border bg-muted/20 p-2.5 text-xs font-mono max-h-24 whitespace-pre-wrap break-all text-foreground/80">
           {value}
         </pre>
       ) : (
         <div
-          className={`rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs break-all text-foreground/80 ${mono ? 'font-mono' : ''}`}
+          className={`min-w-0 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs break-all text-foreground/80 ${mono ? 'font-mono' : ''}`}
         >
           {value}
         </div>

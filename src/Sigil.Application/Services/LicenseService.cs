@@ -43,8 +43,10 @@ public sealed class LicenseService
             ?? throw new InvalidOperationException("Template has no versions yet. Create a version before issuing licenses");
 
         var licenseKey = GenerateLicenseKey();
-        var now = DateTime.UtcNow;
-        var expiresAt = req.ExpiresAt ?? now.AddDays(template.DefaultValidityDays);
+        var now = DateTimeOffset.UtcNow;
+        var expiresAt = req.ExpiresAt.HasValue
+            ? req.ExpiresAt.Value.ToUniversalTime()
+            : now.AddDays(template.DefaultValidityDays);
         var offlineDays = req.OfflineDays ?? template.DefaultOfflineDays;
 
         var license = new License
@@ -75,7 +77,7 @@ public sealed class LicenseService
             LicenseKey = licenseKey,
             TemplateId = template.Id,
             CompanyId = company.Id,
-            ExpiresAt = expiresAt.DateTime,
+            ExpiresAt = expiresAt.UtcDateTime,
             MaxOfflineDays = offlineDays,
             HwFingerprint = req.HwFingerprint,
             Config = System.Text.Json.JsonDocument.Parse(req.Config),

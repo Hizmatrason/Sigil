@@ -12,7 +12,7 @@ public sealed class LicenseRepository : ILicenseRepository
     public LicenseRepository(SigilDbContext db) => _db = db;
 
     public Task<License?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.Licenses.AsNoTracking()
+        => _db.Licenses
             .Include(l => l.Versions)
             .FirstOrDefaultAsync(l => l.Id == id, ct);
 

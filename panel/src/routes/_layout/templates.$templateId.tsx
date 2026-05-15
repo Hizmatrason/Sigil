@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { StatusBadge } from '@/lib/status'
-import { Archive, ArrowLeft, Edit, Plus } from 'lucide-react'
+import { Archive, ArrowLeft, BookOpen, Edit, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/_layout/templates/$templateId')({
@@ -253,7 +253,7 @@ function TemplateDetailPage() {
                   New Version
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
+              <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                   <DialogTitle>Create Version</DialogTitle>
                 </DialogHeader>
@@ -380,6 +380,21 @@ function EditTemplateForm({
   )
 }
 
+const EXAMPLE_SCHEMA = JSON.stringify(
+  {
+    type: 'object',
+    properties: {
+      maxSeats: { type: 'number', default: 5, description: 'Max concurrent users' },
+      tier: { type: 'string', default: 'standard', description: 'License tier' },
+      features: { type: 'array', default: ['core'], description: 'Enabled feature flags' },
+      analytics: { type: 'boolean', default: false, description: 'Analytics module' },
+    },
+    required: ['maxSeats', 'tier'],
+  },
+  null,
+  2,
+)
+
 function CreateVersionForm({
   onSubmit,
   isPending,
@@ -387,23 +402,108 @@ function CreateVersionForm({
   onSubmit: (data: CreateTemplateVersionRequest) => void
   isPending: boolean
 }) {
-  const { register, handleSubmit } = useForm<CreateTemplateVersionRequest>({
+  const { register, handleSubmit, setValue } = useForm<CreateTemplateVersionRequest>({
     defaultValues: {
-      configSchema: JSON.stringify({
-        type: 'object',
-        properties: {},
-        required: [],
-      }, null, 2),
+      configSchema: JSON.stringify({ type: 'object', properties: {}, required: [] }, null, 2),
     },
   })
 
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
+      {/* Schema guide */}
+      <details className="group rounded-lg border border-border bg-muted/20 text-xs">
+        <summary className="flex cursor-pointer select-none list-none items-center gap-2 px-3 py-2.5 font-medium text-muted-foreground hover:text-foreground">
+          <BookOpen className="h-3.5 w-3.5 shrink-0" />
+          Schema Guide
+          <span className="ml-auto text-[10px] font-normal text-muted-foreground/50 group-open:hidden">
+            click to expand
+          </span>
+        </summary>
+
+        <div className="space-y-4 border-t border-border px-3 pb-4 pt-3">
+          <p className="leading-relaxed text-muted-foreground">
+            A <span className="font-medium text-foreground">config schema</span> is a{' '}
+            <a
+              href="https://json-schema.org"
+              target="_blank"
+              rel="noreferrer"
+              className="text-indigo-400 hover:underline"
+            >
+              JSON Schema
+            </a>{' '}
+            object that defines the fields each license of this template will carry. Sigil
+            auto-populates those fields with defaults when you issue a license.
+          </p>
+
+          {/* Example */}
+          <div>
+            <p className="mb-1.5 font-semibold text-foreground">Example — SaaS product</p>
+            <pre className="max-h-36 overflow-auto rounded-md border border-border/50 bg-muted/40 p-2.5 font-mono leading-relaxed text-foreground/80">
+              {EXAMPLE_SCHEMA}
+            </pre>
+            <button
+              type="button"
+              onClick={() => setValue('configSchema', EXAMPLE_SCHEMA, { shouldValidate: false })}
+              className="mt-1.5 rounded px-2 py-1 text-[11px] font-medium text-indigo-400 transition-colors hover:bg-indigo-500/10"
+            >
+              ← Use this example
+            </button>
+          </div>
+
+          {/* Type reference */}
+          <div>
+            <p className="mb-2 font-semibold text-foreground">Property types</p>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+              {(
+                [
+                  ['string', 'text value'],
+                  ['number', 'integer or decimal'],
+                  ['boolean', 'true / false'],
+                  ['array', 'list of values'],
+                  ['object', 'nested object'],
+                ] as const
+              ).map(([type, desc]) => (
+                <div key={type} className="flex items-baseline gap-1.5">
+                  <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground/80">
+                    {type}
+                  </code>
+                  <span className="text-muted-foreground">{desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tips */}
+          <ul className="space-y-1.5 text-muted-foreground">
+            <li className="flex items-start gap-1.5">
+              <span className="mt-px text-indigo-400">→</span>
+              Add{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground/80">
+                "default"
+              </code>{' '}
+              to any property to pre-fill it when issuing a license.
+            </li>
+            <li className="flex items-start gap-1.5">
+              <span className="mt-px text-indigo-400">→</span>
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground/80">
+                "required"
+              </code>{' '}
+              is an array of field names that must be present.
+            </li>
+            <li className="flex items-start gap-1.5">
+              <span className="mt-px text-indigo-400">→</span>
+              Add{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground/80">
+                "description"
+              </code>{' '}
+              to any property to document its purpose.
+            </li>
+          </ul>
+        </div>
+      </details>
+
       <div className="space-y-1.5">
-        <Label htmlFor="configSchema">Config Schema (JSON Schema)</Label>
-        <p className="text-xs text-muted-foreground">
-          Define the shape of license config. When issuing a license, the config will be auto-populated from this schema.
-        </p>
+        <Label htmlFor="configSchema">Config Schema</Label>
         <Textarea
           id="configSchema"
           {...register('configSchema')}
