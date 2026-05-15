@@ -99,7 +99,7 @@ function LicenseDetailPage() {
 
   if (isLoading || !license) {
     return (
-      <div className="flex items-center justify-center py-20 text-sm text-zinc-400">
+      <div className="flex items-center justify-center py-20 text-sm text-muted-foreground/60">
         Loading…
       </div>
     )
@@ -121,16 +121,16 @@ function LicenseDetailPage() {
       <div className="flex items-center gap-3">
         <Link
           to="/licenses"
-          className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+          className="rounded-lg p-1.5 text-muted-foreground/60 hover:text-foreground/80 hover:bg-muted transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5">
-            <h1 className="font-mono text-xl font-semibold text-zinc-900">{license.licenseKey}</h1>
+            <h1 className="font-mono text-xl font-semibold text-foreground">{license.licenseKey}</h1>
             <StatusBadge status={license.status} />
           </div>
-          <p className="mt-0.5 text-sm text-zinc-500">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {company?.name ?? 'Unknown company'}
             {template && (
               <>
@@ -209,8 +209,8 @@ function LicenseDetailPage() {
 
       {/* Details grid */}
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-zinc-200 bg-white p-5">
-          <h2 className="mb-4 text-sm font-semibold text-zinc-900">Details</h2>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h2 className="mb-4 text-sm font-semibold text-foreground">Details</h2>
           <div className="space-y-2.5">
             <Row label="Company">{company?.name ?? license.companyId}</Row>
             <Row label="Template">{template?.name ?? license.templateId}</Row>
@@ -242,9 +242,9 @@ function LicenseDetailPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-5">
-          <h2 className="mb-4 text-sm font-semibold text-zinc-900">Configuration</h2>
-          <pre className="rounded-lg border border-zinc-100 bg-zinc-50 p-3.5 text-xs font-mono overflow-auto max-h-72 text-zinc-700 leading-relaxed">
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h2 className="mb-4 text-sm font-semibold text-foreground">Configuration</h2>
+          <pre className="rounded-lg border border-border/50 bg-muted/20 p-3.5 text-xs font-mono overflow-auto max-h-72 text-foreground/80 leading-relaxed">
             {JSON.stringify(configObj, null, 2)}
           </pre>
         </div>
@@ -256,8 +256,8 @@ function LicenseDetailPage() {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="shrink-0 text-zinc-400">{label}</span>
-      <span className="text-right text-zinc-700">{children}</span>
+      <span className="shrink-0 text-muted-foreground/60">{label}</span>
+      <span className="text-right text-foreground/80">{children}</span>
     </div>
   )
 }

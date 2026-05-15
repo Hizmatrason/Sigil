@@ -26,8 +26,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { StatusBadge } from '@/lib/status'
-import { Building2, ChevronDown, ChevronRight, ExternalLink, Plus, Trash2 } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { Building2, ChevronDown, ChevronRight, ExternalLink, Plus, Search, Trash2 } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
 
 const createSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -56,66 +56,84 @@ function buildTree(companies: Company[]): TreeNode[] {
   return roots
 }
 
-function TreeNode({
+function matchesSearch(node: TreeNode, q: string): boolean {
+  if (!q) return true
+  const lower = q.toLowerCase()
+  if (node.name.toLowerCase().includes(lower) || node.slug.toLowerCase().includes(lower)) return true
+  return node.children.some((c) => matchesSearch(c, q))
+}
+
+function TreeNodeComponent({
   node,
   selectedId,
   onSelect,
   depth = 0,
+  searchQuery,
 }: {
   node: TreeNode
   selectedId?: string
   onSelect: (n: TreeNode) => void
   depth?: number
+  searchQuery: string
 }) {
-  const [expanded, setExpanded] = useState(depth === 0)
+  const isSearching = !!searchQuery
+  const [expanded, setExpanded] = useState(depth === 0 || isSearching)
   const hasChildren = node.children.length > 0
   const isSelected = selectedId === node.id
+  const isVisible = matchesSearch(node, searchQuery)
+
+  useEffect(() => {
+    if (isSearching) setExpanded(true)
+  }, [isSearching])
+
+  if (!isVisible) return null
 
   return (
     <div>
       <div
         className={`flex items-center gap-1 rounded-lg px-2 py-1.5 cursor-pointer transition-colors ${
           isSelected
-            ? 'bg-indigo-50 text-indigo-700'
-            : 'hover:bg-zinc-100 text-zinc-700'
+            ? 'bg-indigo-500/15 text-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-400'
+            : 'hover:bg-muted text-foreground/80'
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         onClick={() => onSelect(node)}
       >
         {hasChildren ? (
           <button
-            className="p-0.5 hover:bg-zinc-200 rounded transition-colors"
+            className="p-0.5 hover:bg-muted/80 rounded transition-colors"
             onClick={(e) => {
               e.stopPropagation()
               setExpanded((v) => !v)
             }}
           >
             {expanded ? (
-              <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
             )}
           </button>
         ) : (
           <span className="w-5" />
         )}
         <Building2
-          className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-indigo-500' : 'text-zinc-400'}`}
+          className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-indigo-400' : 'text-muted-foreground/60'}`}
         />
         <span className="text-sm font-medium truncate">{node.name}</span>
-        <code className="ml-auto text-[11px] text-zinc-400 bg-zinc-100 rounded px-1.5 shrink-0">
+        <code className="ml-auto text-[11px] text-muted-foreground/60 bg-muted rounded px-1.5 shrink-0">
           {node.slug}
         </code>
       </div>
       {hasChildren && expanded && (
         <div>
           {node.children.map((child) => (
-            <TreeNode
+            <TreeNodeComponent
               key={child.id}
               node={child}
               selectedId={selectedId}
               onSelect={onSelect}
               depth={depth + 1}
+              searchQuery={searchQuery}
             />
           ))}
         </div>
@@ -128,6 +146,7 @@ function CompaniesPage() {
   const queryClient = useQueryClient()
   const [createOpen, setCreateOpen] = useState(false)
   const [selected, setSelected] = useState<TreeNode | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { data: companies, isLoading } = useQuery({
     queryKey: ['companies'],
@@ -164,9 +183,21 @@ function CompaniesPage() {
     onError: () => toast.error('Failed to delete company'),
   })
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<CreateForm>({
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<CreateForm>({
     resolver: zodResolver(createSchema),
   })
+
+  const nameValue = watch('name')
+  useEffect(() => {
+    if (nameValue) {
+      const autoSlug = nameValue
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+      setValue('slug', autoSlug, { shouldValidate: false })
+    }
+  }, [nameValue, setValue])
 
   const onSubmit = (data: CreateForm) => {
     createMutation.mutate({ ...data, parentId: selected?.id })
@@ -177,8 +208,8 @@ function CompaniesPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-900">Companies</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h1 className="text-xl font-semibold text-foreground">Companies</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage your tenant hierarchy
           </p>
         </div>
@@ -190,28 +221,39 @@ function CompaniesPage() {
 
       <div className="grid grid-cols-[280px_1fr] gap-5">
         {/* Tree panel */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-3 h-fit">
-          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+        <div className="rounded-xl border border-border bg-card p-3 h-fit">
+          <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
             Hierarchy
           </p>
+          {/* Search */}
+          <div className="relative mb-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search companies…"
+              className="w-full rounded-lg border border-border bg-muted/30 pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
           {isLoading ? (
             <div className="space-y-1.5 px-2">
               {[40, 32, 48, 28].map((w, i) => (
-                <div key={i} className="h-7 animate-pulse rounded-md bg-zinc-100" style={{ width: `${w * 4}px` }} />
+                <div key={i} className="h-7 animate-pulse rounded-md bg-muted" style={{ width: `${w * 4}px` }} />
               ))}
             </div>
           ) : tree.length === 0 ? (
-            <p className="py-6 text-center text-sm text-zinc-400">
+            <p className="py-6 text-center text-sm text-muted-foreground">
               No companies yet.
             </p>
           ) : (
             <div className="space-y-0.5">
               {tree.map((node) => (
-                <TreeNode
+                <TreeNodeComponent
                   key={node.id}
                   node={node}
                   selectedId={selected?.id}
                   onSelect={setSelected}
+                  searchQuery={searchQuery}
                 />
               ))}
             </div>
@@ -222,14 +264,14 @@ function CompaniesPage() {
         {selected ? (
           <div className="space-y-4">
             {/* Selected header */}
-            <div className="rounded-xl border border-zinc-200 bg-white p-5">
+            <div className="rounded-xl border border-border bg-card p-5">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <h2 className="text-lg font-semibold text-zinc-900">{selected.name}</h2>
+                    <h2 className="text-lg font-semibold text-foreground">{selected.name}</h2>
                     <StatusBadge status={selected.status} />
                   </div>
-                  <code className="mt-1 text-xs text-zinc-500">{selected.path}</code>
+                  <code className="mt-1 text-xs text-muted-foreground">{selected.path}</code>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" asChild>
@@ -291,8 +333,8 @@ function CompaniesPage() {
             </div>
 
             {/* Quick links */}
-            <div className="rounded-xl border border-zinc-200 bg-white p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
                 Quick links
               </p>
               <div className="flex gap-2">
@@ -306,7 +348,7 @@ function CompaniesPage() {
             </div>
           </div>
         ) : (
-          <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-zinc-200 text-sm text-zinc-400">
+          <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
             Select a company from the tree to view details
           </div>
         )}
@@ -329,7 +371,10 @@ function CompaniesPage() {
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="slug">Slug</Label>
+              <Label htmlFor="slug">
+                Slug{' '}
+                <span className="text-muted-foreground font-normal text-xs">(auto-filled from name)</span>
+              </Label>
               <Input id="slug" {...register('slug')} placeholder="acme-corp" className="font-mono" />
               {errors.slug && (
                 <p className="text-xs text-destructive">{errors.slug.message}</p>
@@ -347,9 +392,9 @@ function CompaniesPage() {
 
 function InfoCell({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-3 py-2.5">
-      <p className="text-xs text-zinc-400">{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-zinc-700">{value}</p>
+    <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+      <p className="text-xs text-muted-foreground/60">{label}</p>
+      <p className="mt-0.5 text-sm font-medium text-foreground/80">{value}</p>
     </div>
   )
 }

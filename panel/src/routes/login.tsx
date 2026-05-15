@@ -95,30 +95,30 @@ function LoginPage() {
           </div>
         </div>
 
-        <p className="text-xs text-zinc-700">Self-hosted · Ed25519 · Open source</p>
+        <p className="text-xs text-foreground/80">Self-hosted · Ed25519 · Open source</p>
       </div>
 
       {/* Right — form */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-white px-8">
+      <div className="flex flex-1 flex-col items-center justify-center bg-background px-8">
         {/* Mobile logo */}
         <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50">
-            <Fingerprint className="h-4 w-4 text-indigo-600" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/20 ring-1 ring-indigo-500/30">
+            <Fingerprint className="h-4 w-4 text-indigo-400" />
           </div>
-          <span className="text-base font-semibold text-zinc-900">Sigil</span>
+          <span className="text-base font-semibold text-foreground">Sigil</span>
         </div>
 
         <div className="w-full max-w-sm">
           <div className="mb-7">
-            <h2 className="text-2xl font-semibold text-zinc-900">Sign in</h2>
-            <p className="mt-1.5 text-sm text-zinc-500">
+            <h2 className="text-2xl font-semibold text-foreground">Sign in</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">
               Enter your credentials to access the panel
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-zinc-700 text-sm">
+              <Label htmlFor="email" className="text-foreground/80 text-sm">
                 Email
               </Label>
               <Input
@@ -134,7 +134,7 @@ function LoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-zinc-700 text-sm">
+              <Label htmlFor="password" className="text-foreground/80 text-sm">
                 Password
               </Label>
               <Input

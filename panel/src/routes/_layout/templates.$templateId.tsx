@@ -107,7 +107,7 @@ function TemplateDetailPage() {
 
   if (isLoading || !template) {
     return (
-      <div className="flex items-center justify-center py-20 text-sm text-zinc-400">
+      <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
         Loading…
       </div>
     )
@@ -119,19 +119,19 @@ function TemplateDetailPage() {
       <div className="flex items-center gap-3">
         <Link
           to="/templates"
-          className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+          className="rounded-lg p-1.5 text-muted-foreground/60 hover:text-foreground hover:bg-muted transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-semibold text-zinc-900">{template.name}</h1>
+            <h1 className="text-xl font-semibold text-foreground">{template.name}</h1>
             <StatusBadge status={template.status} />
           </div>
-          <p className="mt-0.5 text-sm text-zinc-500">
-            <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">{template.productCode}</code>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{template.productCode}</code>
             {template.description && (
-              <span className="ml-2 text-zinc-400">{template.description}</span>
+              <span className="ml-2 text-muted-foreground/60">{template.description}</span>
             )}
           </p>
         </div>
@@ -159,7 +159,7 @@ function TemplateDetailPage() {
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-zinc-500 hover:text-destructive">
+                <Button variant="outline" size="sm" className="text-muted-foreground hover:text-destructive">
                   <Archive className="mr-1.5 h-3.5 w-3.5" />
                   Archive
                 </Button>
@@ -189,12 +189,12 @@ function TemplateDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="details">
-        <TabsList className="bg-zinc-100">
+        <TabsList className="bg-muted/50">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="versions">
             Versions
             {versions && versions.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-zinc-200 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600">
+              <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 {versions.length}
               </span>
             )}
@@ -203,20 +203,20 @@ function TemplateDetailPage() {
 
         <TabsContent value="details" className="mt-5">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-zinc-200 bg-white p-5">
-              <h3 className="mb-4 text-sm font-semibold text-zinc-900">General</h3>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="mb-4 text-sm font-semibold text-foreground">General</h3>
               <div className="space-y-2.5">
                 <Row label="Status">
                   <StatusBadge status={template.status} />
                 </Row>
                 <Row label="Product Code">
-                  <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
+                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
                     {template.productCode}
                   </code>
                 </Row>
                 <Row label="Description">
                   {template.description || (
-                    <span className="text-zinc-300">—</span>
+                    <span className="text-muted-foreground/40">—</span>
                   )}
                 </Row>
                 <Row label="Created">
@@ -225,18 +225,18 @@ function TemplateDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-200 bg-white p-5">
-              <h3 className="mb-4 text-sm font-semibold text-zinc-900">Defaults</h3>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="mb-4 text-sm font-semibold text-foreground">Defaults</h3>
               <div className="space-y-2.5">
                 <Row label="Offline Days">{template.defaultOfflineDays} days</Row>
                 <Row label="Validity Days">{template.defaultValidityDays} days</Row>
                 <Row label="Current Version">
                   {template.currentVersionId ? (
-                    <code className="rounded bg-zinc-100 px-1.5 py-0.5 text-xs">
+                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
                       {template.currentVersionId.slice(0, 8)}…
                     </code>
                   ) : (
-                    <span className="text-amber-600 text-xs">No version yet</span>
+                    <span className="text-amber-500 text-xs">No version yet</span>
                   )}
                 </Row>
               </div>
@@ -266,42 +266,34 @@ function TemplateDetailPage() {
           </div>
 
           {versions?.length === 0 ? (
-            <div className="flex flex-col items-center rounded-xl border border-dashed border-zinc-200 py-14 text-center">
-              <p className="text-sm font-medium text-zinc-500">No versions yet</p>
-              <p className="mt-1 text-sm text-zinc-400">
+            <div className="flex flex-col items-center rounded-xl border border-dashed border-border py-14 text-center">
+              <p className="text-sm font-medium text-foreground">No versions yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">
                 Create a version to define a config schema.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               {versions?.map((v) => (
-                <div key={v.id} className="rounded-xl border border-zinc-200 bg-white p-4">
+                <div key={v.id} className="rounded-xl border border-border bg-card p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-semibold text-zinc-600">
+                      <span className="rounded-md border border-border bg-muted/30 px-2 py-0.5 text-xs font-semibold text-foreground/80">
                         v{v.version}
                       </span>
-                      {v.changelog && (
-                        <span className="text-sm text-zinc-600">{v.changelog}</span>
-                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(v.createdAt).toLocaleString()}
+                      </span>
                     </div>
-                    <span className="text-xs text-zinc-400">
-                      {new Date(v.createdAt).toLocaleString()}
+                    <span className="text-xs text-muted-foreground/60 font-mono">
+                      {v.signingKeyId.slice(0, 8)}…
                     </span>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="mb-1.5 text-xs font-medium text-zinc-400">Config Schema</p>
-                      <pre className="rounded-lg border border-zinc-100 bg-zinc-50 p-2.5 text-xs font-mono overflow-auto max-h-40 text-zinc-600">
-                        {formatJson(v.configSchema)}
-                      </pre>
-                    </div>
-                    <div>
-                      <p className="mb-1.5 text-xs font-medium text-zinc-400">Defaults</p>
-                      <pre className="rounded-lg border border-zinc-100 bg-zinc-50 p-2.5 text-xs font-mono overflow-auto max-h-40 text-zinc-600">
-                        {formatJson(v.defaults)}
-                      </pre>
-                    </div>
+                  <div className="mt-3">
+                    <p className="mb-1.5 text-xs font-medium text-muted-foreground">Config Schema</p>
+                    <pre className="rounded-lg border border-border/50 bg-muted/20 p-2.5 text-xs font-mono overflow-auto max-h-40 text-foreground/80">
+                      {formatJson(v.configSchema)}
+                    </pre>
                   </div>
                 </div>
               ))}
@@ -316,8 +308,8 @@ function TemplateDetailPage() {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="shrink-0 text-zinc-400">{label}</span>
-      <span className="text-right text-zinc-700">{children}</span>
+      <span className="shrink-0 text-muted-foreground/60">{label}</span>
+      <span className="text-right text-foreground/80">{children}</span>
     </div>
   )
 }
@@ -396,35 +388,28 @@ function CreateVersionForm({
   isPending: boolean
 }) {
   const { register, handleSubmit } = useForm<CreateTemplateVersionRequest>({
-    defaultValues: { configSchema: '{}', defaults: '{}' },
+    defaultValues: {
+      configSchema: JSON.stringify({
+        type: 'object',
+        properties: {},
+        required: [],
+      }, null, 2),
+    },
   })
 
   return (
     <form onSubmit={handleSubmit((data) => onSubmit(data))} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="configSchema">Config Schema (JSON Schema)</Label>
+        <p className="text-xs text-muted-foreground">
+          Define the shape of license config. When issuing a license, the config will be auto-populated from this schema.
+        </p>
         <Textarea
           id="configSchema"
           {...register('configSchema')}
-          rows={6}
+          rows={10}
           className="font-mono text-xs"
         />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="defaults">
-          Defaults{' '}
-          <span className="text-zinc-400 font-normal text-xs">(UI hints — not pre-filled values)</span>
-        </Label>
-        <Textarea
-          id="defaults"
-          {...register('defaults')}
-          rows={4}
-          className="font-mono text-xs"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="changelog">Changelog</Label>
-        <Input id="changelog" {...register('changelog')} placeholder="What changed in this version?" />
       </div>
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? 'Creating…' : 'Create Version'}

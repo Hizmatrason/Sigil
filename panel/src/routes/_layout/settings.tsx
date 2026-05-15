@@ -12,14 +12,14 @@ function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-zinc-900">Settings</h1>
-        <p className="mt-1 text-sm text-zinc-500">Account and system information</p>
+        <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Account and system information</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Account */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-5">
-          <h2 className="mb-4 text-sm font-semibold text-zinc-900">Account</h2>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h2 className="mb-4 text-sm font-semibold text-foreground">Account</h2>
           <div className="space-y-2.5">
             <Row label="Email">
               <span className="font-mono text-sm">{user?.email}</span>
@@ -35,22 +35,22 @@ function SettingsPage() {
         </div>
 
         {/* System */}
-        <div className="rounded-xl border border-zinc-200 bg-white p-5">
-          <h2 className="mb-4 text-sm font-semibold text-zinc-900">System</h2>
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h2 className="mb-4 text-sm font-semibold text-foreground">System</h2>
           <div className="space-y-2.5">
             <Row label="Version">
-              <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-mono text-zinc-600">
+              <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-mono text-muted-foreground">
                 Phase 2
               </span>
             </Row>
             <Row label="API">
-              <code className="text-xs text-zinc-500">/api/v1</code>
+              <code className="text-xs text-muted-foreground">/api/v1</code>
             </Row>
             <Row label="Auth">
-              <span className="text-sm text-zinc-600">Cookie-based session (7d sliding)</span>
+              <span className="text-sm text-muted-foreground">Cookie-based session (7d sliding)</span>
             </Row>
             <Row label="Signing">
-              <span className="text-sm text-zinc-600">Ed25519 (EncryptedFileSigner)</span>
+              <span className="text-sm text-muted-foreground">Ed25519 (EncryptedFileSigner)</span>
             </Row>
           </div>
         </div>
@@ -62,8 +62,8 @@ function SettingsPage() {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="shrink-0 text-zinc-400">{label}</span>
-      <span className="text-right text-zinc-700 flex items-center">{children}</span>
+      <span className="shrink-0 text-muted-foreground/60">{label}</span>
+      <span className="text-right text-foreground/80 flex items-center">{children}</span>
     </div>
   )
 }

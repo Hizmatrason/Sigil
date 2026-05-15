@@ -91,7 +91,7 @@ export interface UpdateTemplateRequest {
 
 export interface CreateTemplateVersionRequest {
   configSchema: string
-  defaults: string
+  defaults?: string
   changelog?: string
 }
 

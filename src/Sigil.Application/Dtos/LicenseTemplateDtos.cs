@@ -27,8 +27,8 @@ public sealed record LicenseTemplateResponse(
 
 public sealed record CreateTemplateVersionRequest(
     string ConfigSchema,
-    string Defaults,
-    string? Changelog);
+    string? Defaults = null,
+    string? Changelog = null);
 
 public sealed record TemplateVersionResponse(
     Guid Id,

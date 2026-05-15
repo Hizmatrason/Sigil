@@ -104,7 +104,7 @@ public sealed class LicenseTemplateService
             TemplateId = templateId,
             Version = nextVersion,
             ConfigSchema = req.ConfigSchema,
-            Defaults = req.Defaults,
+            Defaults = req.Defaults ?? "{}",
             SigningKeyId = signingKey.Id,
             Changelog = req.Changelog,
             CreatedAt = DateTimeOffset.UtcNow,
