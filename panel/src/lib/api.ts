@@ -128,3 +128,21 @@ export interface IssueLicenseRequest {
 export interface RevokeLicenseRequest {
   reason?: string
 }
+
+// ── Activations & Heartbeats ──────────────────────────────────────────────
+
+export interface Activation {
+  id: string
+  hwFingerprint?: string
+  machineName?: string
+  status: string
+  activatedAt: string
+  lastHeartbeatAt?: string
+  deactivatedAt?: string
+}
+
+export interface HeartbeatEntry {
+  id: string
+  activationId: string
+  occurredAt: string
+}

@@ -7,6 +7,7 @@ using Serilog;
 using Sigil.Application.Interfaces;
 using Sigil.Application.Services;
 using Sigil.Infrastructure.Data;
+using Sigil.Infrastructure.Repositories;
 using Sigil.Infrastructure.Signing;
 
 const string ServiceName = "sigil-api";
@@ -68,12 +69,15 @@ try
     builder.Services.AddScoped<ILicenseTemplateRepository, Sigil.Infrastructure.Repositories.LicenseTemplateRepository>();
     builder.Services.AddScoped<ILicenseRepository, Sigil.Infrastructure.Repositories.LicenseRepository>();
     builder.Services.AddScoped<IUserRepository, Sigil.Infrastructure.Repositories.UserRepository>();
+    builder.Services.AddScoped<IActivationRepository, Sigil.Infrastructure.Repositories.ActivationRepository>();
+    builder.Services.AddScoped<IHeartbeatRepository, Sigil.Infrastructure.Repositories.HeartbeatRepository>();
 
     // Services
     builder.Services.AddScoped<CompanyService>();
     builder.Services.AddScoped<LicenseTemplateService>();
     builder.Services.AddScoped<LicenseService>();
     builder.Services.AddScoped<AuthService>();
+    builder.Services.AddScoped<ClientLicenseService>();
 
     // Signer
     builder.Services.AddScoped<ISigner, EncryptedFileSigner>();

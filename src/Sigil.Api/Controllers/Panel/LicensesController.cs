@@ -11,8 +11,13 @@ namespace Sigil.Api.Controllers.Panel;
 public sealed class LicensesController : ControllerBase
 {
     private readonly LicenseService _service;
+    private readonly ClientLicenseService _clientService;
 
-    public LicensesController(LicenseService service) => _service = service;
+    public LicensesController(LicenseService service, ClientLicenseService clientService)
+    {
+        _service = service;
+        _clientService = clientService;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] Guid? companyId, CancellationToken ct)
@@ -70,5 +75,19 @@ public sealed class LicensesController : ControllerBase
     {
         var hex = await _service.GetPublicKeyAsync(id, ct);
         return hex is null ? NotFound() : Ok(hex);
+    }
+
+    [HttpGet("{id:guid}/activations")]
+    public async Task<IActionResult> GetActivations(Guid id, CancellationToken ct)
+    {
+        var result = await _clientService.GetActivationsAsync(id, ct);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/heartbeats")]
+    public async Task<IActionResult> GetHeartbeats(Guid id, CancellationToken ct)
+    {
+        var result = await _clientService.GetHeartbeatsAsync(id, ct);
+        return Ok(result);
     }
 }

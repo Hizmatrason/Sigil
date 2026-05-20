@@ -31,4 +31,6 @@ public sealed class License : BaseEntity
     public Guid? CreatedBy { get; set; }
 
     public ICollection<LicenseVersion> Versions { get; set; } = [];
+    public ICollection<Activation> Activations { get; set; } = [];
+    public ICollection<Heartbeat> Heartbeats { get; set; } = [];
 }
