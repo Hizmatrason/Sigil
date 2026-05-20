@@ -3,6 +3,7 @@ using Sigil.Application.Interfaces;
 using Sigil.Application.Licensing;
 using Sigil.Domain.Entities;
 using Sigil.Domain.Enums;
+using Sigil.Domain.Webhooks;
 
 namespace Sigil.Application.Services;
 
@@ -13,8 +14,8 @@ public sealed class ClientLicenseService
     private readonly IActivationRepository _activationRepo;
     private readonly IHeartbeatRepository _heartbeatRepo;
     private readonly ISigner _signer;
+    private readonly WebhookService _webhooks;
 
-    // How often the SDK should call heartbeat (returned to client)
     private const int HeartbeatIntervalSeconds = 3600;
 
     public ClientLicenseService(
@@ -22,13 +23,15 @@ public sealed class ClientLicenseService
         ILicenseTemplateRepository templateRepo,
         IActivationRepository activationRepo,
         IHeartbeatRepository heartbeatRepo,
-        ISigner signer)
+        ISigner signer,
+        WebhookService webhooks)
     {
         _licenseRepo = licenseRepo;
         _templateRepo = templateRepo;
         _activationRepo = activationRepo;
         _heartbeatRepo = heartbeatRepo;
         _signer = signer;
+        _webhooks = webhooks;
     }
 
     public async Task<ActivateResponse> ActivateAsync(ActivateRequest req, string? clientIp, CancellationToken ct = default)
@@ -67,6 +70,15 @@ public sealed class ClientLicenseService
 
         var token = await IssueMarkerAsync(license, req.HwFingerprint, ct);
         await _activationRepo.SaveChangesAsync(ct);
+
+        _ = _webhooks.PublishEventAsync(WebhookEventTypes.LicenseActivated, new
+        {
+            licenseId = license.Id,
+            activationId = existing.Id,
+            hwFingerprint = req.HwFingerprint,
+            machineName = req.MachineName,
+            clientIp,
+        }, ct);
 
         return new ActivateResponse(
             existing.Id,

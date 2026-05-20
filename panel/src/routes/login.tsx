@@ -95,7 +95,7 @@ function LoginPage() {
           </div>
         </div>
 
-        <p className="text-xs text-foreground/80">Self-hosted · Ed25519 · Open source</p>
+        <p className="text-xs text-foreground/80">Faris made it, hehe</p>
       </div>
 
       {/* Right — form */}

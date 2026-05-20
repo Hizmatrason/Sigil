@@ -6,6 +6,7 @@ using Sigil.Application.Interfaces;
 using Sigil.Domain.Entities;
 using Sigil.Domain.Enums;
 using Sigil.Domain.ValueObjects;
+using Sigil.Domain.Webhooks;
 
 namespace Sigil.Application.Services;
 
@@ -15,17 +16,20 @@ public sealed class LicenseService
     private readonly ILicenseTemplateRepository _templateRepo;
     private readonly ICompanyRepository _companyRepo;
     private readonly ISigner _signer;
+    private readonly WebhookService _webhooks;
 
     public LicenseService(
         ILicenseRepository licenseRepo,
         ILicenseTemplateRepository templateRepo,
         ICompanyRepository companyRepo,
-        ISigner signer)
+        ISigner signer,
+        WebhookService webhooks)
     {
         _licenseRepo = licenseRepo;
         _templateRepo = templateRepo;
         _companyRepo = companyRepo;
         _signer = signer;
+        _webhooks = webhooks;
     }
 
     public async Task<LicenseTokenResponse> IssueAsync(LicenseCreateRequest req, CancellationToken ct = default)
@@ -102,6 +106,15 @@ public sealed class LicenseService
         var publicKey = await _signer.GetPublicKeyAsync(signingKey.Id, ct);
         var publicKeyHex = Convert.ToHexString(publicKey).ToLowerInvariant();
 
+        _ = _webhooks.PublishEventAsync(WebhookEventTypes.LicenseIssued, new
+        {
+            licenseId = license.Id,
+            licenseKey,
+            companyId = company.Id,
+            templateId = template.Id,
+            expiresAt,
+        }, ct);
+
         return new LicenseTokenResponse(licenseKey, token, publicKeyHex);
     }
 
@@ -133,6 +146,15 @@ public sealed class LicenseService
         license.RevocationReason = reason;
         license.UpdatedAt = DateTimeOffset.UtcNow;
         await _licenseRepo.SaveChangesAsync(ct);
+
+        _ = _webhooks.PublishEventAsync(WebhookEventTypes.LicenseRevoked, new
+        {
+            licenseId = license.Id,
+            licenseKey = license.LicenseKey,
+            reason,
+            revokedAt = license.RevokedAt,
+        }, ct);
+
         return true;
     }
 

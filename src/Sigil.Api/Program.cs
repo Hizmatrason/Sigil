@@ -9,6 +9,7 @@ using Sigil.Application.Services;
 using Sigil.Infrastructure.Data;
 using Sigil.Infrastructure.Repositories;
 using Sigil.Infrastructure.Signing;
+using Sigil.Infrastructure.Webhooks;
 
 const string ServiceName = "sigil-api";
 
@@ -71,13 +72,23 @@ try
     builder.Services.AddScoped<IUserRepository, Sigil.Infrastructure.Repositories.UserRepository>();
     builder.Services.AddScoped<IActivationRepository, Sigil.Infrastructure.Repositories.ActivationRepository>();
     builder.Services.AddScoped<IHeartbeatRepository, Sigil.Infrastructure.Repositories.HeartbeatRepository>();
+    builder.Services.AddScoped<IWebhookEndpointRepository, WebhookEndpointRepository>();
+    builder.Services.AddScoped<IWebhookDeliveryRepository, WebhookDeliveryRepository>();
 
     // Services
     builder.Services.AddScoped<CompanyService>();
     builder.Services.AddScoped<LicenseTemplateService>();
+    builder.Services.AddScoped<WebhookService>();
     builder.Services.AddScoped<LicenseService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<ClientLicenseService>();
+
+    // Webhook dispatch worker
+    builder.Services.AddHttpClient("webhook", c =>
+    {
+        c.Timeout = TimeSpan.FromSeconds(30);
+    });
+    builder.Services.AddHostedService<WebhookDispatchWorker>();
 
     // Signer
     builder.Services.AddScoped<ISigner, EncryptedFileSigner>();

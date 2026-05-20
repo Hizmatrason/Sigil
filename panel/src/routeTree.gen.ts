@@ -17,6 +17,7 @@ import { Route as LayoutTemplatesIndexRouteImport } from './routes/_layout/templ
 import { Route as LayoutLicensesIndexRouteImport } from './routes/_layout/licenses.index'
 import { Route as LayoutCompaniesIndexRouteImport } from './routes/_layout/companies.index'
 import { Route as LayoutTemplatesTemplateIdRouteImport } from './routes/_layout/templates.$templateId'
+import { Route as LayoutSettingsWebhooksRouteImport } from './routes/_layout/settings.webhooks'
 import { Route as LayoutLicensesLicenseIdRouteImport } from './routes/_layout/licenses.$licenseId'
 import { Route as LayoutCompaniesCompanyIdRouteImport } from './routes/_layout/companies.$companyId'
 
@@ -60,6 +61,11 @@ const LayoutTemplatesTemplateIdRoute =
     path: '/templates/$templateId',
     getParentRoute: () => LayoutRoute,
   } as any)
+const LayoutSettingsWebhooksRoute = LayoutSettingsWebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => LayoutSettingsRoute,
+} as any)
 const LayoutLicensesLicenseIdRoute = LayoutLicensesLicenseIdRouteImport.update({
   id: '/licenses/$licenseId',
   path: '/licenses/$licenseId',
@@ -75,9 +81,10 @@ const LayoutCompaniesCompanyIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
-  '/settings': typeof LayoutSettingsRoute
+  '/settings': typeof LayoutSettingsRouteWithChildren
   '/companies/$companyId': typeof LayoutCompaniesCompanyIdRoute
   '/licenses/$licenseId': typeof LayoutLicensesLicenseIdRoute
+  '/settings/webhooks': typeof LayoutSettingsWebhooksRoute
   '/templates/$templateId': typeof LayoutTemplatesTemplateIdRoute
   '/companies/': typeof LayoutCompaniesIndexRoute
   '/licenses/': typeof LayoutLicensesIndexRoute
@@ -85,10 +92,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/settings': typeof LayoutSettingsRoute
+  '/settings': typeof LayoutSettingsRouteWithChildren
   '/': typeof LayoutIndexRoute
   '/companies/$companyId': typeof LayoutCompaniesCompanyIdRoute
   '/licenses/$licenseId': typeof LayoutLicensesLicenseIdRoute
+  '/settings/webhooks': typeof LayoutSettingsWebhooksRoute
   '/templates/$templateId': typeof LayoutTemplatesTemplateIdRoute
   '/companies': typeof LayoutCompaniesIndexRoute
   '/licenses': typeof LayoutLicensesIndexRoute
@@ -98,10 +106,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
-  '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/settings': typeof LayoutSettingsRouteWithChildren
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/companies/$companyId': typeof LayoutCompaniesCompanyIdRoute
   '/_layout/licenses/$licenseId': typeof LayoutLicensesLicenseIdRoute
+  '/_layout/settings/webhooks': typeof LayoutSettingsWebhooksRoute
   '/_layout/templates/$templateId': typeof LayoutTemplatesTemplateIdRoute
   '/_layout/companies/': typeof LayoutCompaniesIndexRoute
   '/_layout/licenses/': typeof LayoutLicensesIndexRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/companies/$companyId'
     | '/licenses/$licenseId'
+    | '/settings/webhooks'
     | '/templates/$templateId'
     | '/companies/'
     | '/licenses/'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/companies/$companyId'
     | '/licenses/$licenseId'
+    | '/settings/webhooks'
     | '/templates/$templateId'
     | '/companies'
     | '/licenses'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/_layout/companies/$companyId'
     | '/_layout/licenses/$licenseId'
+    | '/_layout/settings/webhooks'
     | '/_layout/templates/$templateId'
     | '/_layout/companies/'
     | '/_layout/licenses/'
@@ -207,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutTemplatesTemplateIdRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/settings/webhooks': {
+      id: '/_layout/settings/webhooks'
+      path: '/webhooks'
+      fullPath: '/settings/webhooks'
+      preLoaderRoute: typeof LayoutSettingsWebhooksRouteImport
+      parentRoute: typeof LayoutSettingsRoute
+    }
     '/_layout/licenses/$licenseId': {
       id: '/_layout/licenses/$licenseId'
       path: '/licenses/$licenseId'
@@ -224,8 +243,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface LayoutSettingsRouteChildren {
+  LayoutSettingsWebhooksRoute: typeof LayoutSettingsWebhooksRoute
+}
+
+const LayoutSettingsRouteChildren: LayoutSettingsRouteChildren = {
+  LayoutSettingsWebhooksRoute: LayoutSettingsWebhooksRoute,
+}
+
+const LayoutSettingsRouteWithChildren = LayoutSettingsRoute._addFileChildren(
+  LayoutSettingsRouteChildren,
+)
+
 interface LayoutRouteChildren {
-  LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutSettingsRoute: typeof LayoutSettingsRouteWithChildren
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutCompaniesCompanyIdRoute: typeof LayoutCompaniesCompanyIdRoute
   LayoutLicensesLicenseIdRoute: typeof LayoutLicensesLicenseIdRoute
@@ -236,7 +267,7 @@ interface LayoutRouteChildren {
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
-  LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutSettingsRoute: LayoutSettingsRouteWithChildren,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutCompaniesCompanyIdRoute: LayoutCompaniesCompanyIdRoute,
   LayoutLicensesLicenseIdRoute: LayoutLicensesLicenseIdRoute,

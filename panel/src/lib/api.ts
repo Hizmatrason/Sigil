@@ -146,3 +146,58 @@ export interface HeartbeatEntry {
   activationId: string
   occurredAt: string
 }
+
+// ── Webhooks ───────────────────────────────────────────────────────────────
+
+export interface WebhookEndpoint {
+  id: string
+  url: string
+  description: string
+  isActive: boolean
+  events: string[]
+  lastDeliveryAt?: string
+  createdAt: string
+}
+
+export interface CreateWebhookEndpointRequest {
+  url: string
+  secret: string
+  description: string
+  events: string[]
+}
+
+export interface UpdateWebhookEndpointRequest {
+  url?: string
+  secret?: string
+  description?: string
+  isActive?: boolean
+  events?: string[]
+}
+
+export interface WebhookDelivery {
+  id: string
+  endpointId: string
+  eventType: string
+  payload: string
+  status: string
+  attemptCount: number
+  responseStatusCode?: number
+  responseBody?: string
+  lastError?: string
+  nextAttemptAt?: string
+  lastAttemptAt?: string
+  createdAt: string
+}
+
+export const webhooksApi = {
+  listEndpoints: () => api.get<WebhookEndpoint[]>('/panel/webhooks'),
+  getEndpoint: (id: string) => api.get<WebhookEndpoint>(`/panel/webhooks/${id}`),
+  createEndpoint: (req: CreateWebhookEndpointRequest) => api.post<WebhookEndpoint>('/panel/webhooks', req),
+  updateEndpoint: (id: string, req: UpdateWebhookEndpointRequest) =>
+    api.patch<WebhookEndpoint>(`/panel/webhooks/${id}`, req),
+  deleteEndpoint: (id: string) => api.delete(`/panel/webhooks/${id}`),
+  getDeliveries: (id: string, limit = 50) =>
+    api.get<WebhookDelivery[]>(`/panel/webhooks/${id}/deliveries?limit=${limit}`),
+  replay: (deliveryId: string) => api.post(`/panel/webhooks/deliveries/${deliveryId}/replay`),
+  eventTypes: () => api.get<string[]>('/panel/webhooks/event-types'),
+}

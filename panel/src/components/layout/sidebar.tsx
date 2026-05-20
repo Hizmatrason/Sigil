@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  Webhook,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
@@ -75,6 +76,23 @@ export function Sidebar() {
 
       {/* Bottom */}
       <div className="border-t border-zinc-900 px-2 pb-3 pt-2 space-y-0.5">
+        <Link
+          to="/settings/webhooks"
+          className={cn(
+            'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
+            location.pathname.startsWith('/settings/webhooks')
+              ? 'bg-zinc-800 text-white'
+              : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200',
+          )}
+        >
+          <Webhook
+            className={cn(
+              'h-4 w-4 shrink-0',
+              location.pathname.startsWith('/settings/webhooks') && 'text-indigo-400',
+            )}
+          />
+          Webhooks
+        </Link>
         <Link
           to="/settings"
           className={cn(
