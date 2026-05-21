@@ -109,7 +109,7 @@ public sealed class LicenseService
         var publicKey = await _signer.GetPublicKeyAsync(signingKey.Id, ct);
         var publicKeyHex = Convert.ToHexString(publicKey).ToLowerInvariant();
 
-        _ = _webhooks.PublishEventAsync(WebhookEventTypes.LicenseIssued, new
+        await _webhooks.PublishEventAsync(WebhookEventTypes.LicenseIssued, new
         {
             licenseId = license.Id,
             licenseKey,
@@ -118,7 +118,7 @@ public sealed class LicenseService
             expiresAt,
         }, ct);
 
-        _ = _audit.LogAsync("license.issued", "License", license.Id,
+        await _audit.LogAsync("license.issued", "License", license.Id,
             new { licenseKey, companyId = company.Id, templateId = template.Id }, ct: ct);
 
         return new LicenseTokenResponse(licenseKey, token, publicKeyHex);
@@ -153,7 +153,7 @@ public sealed class LicenseService
         license.UpdatedAt = DateTimeOffset.UtcNow;
         await _licenseRepo.SaveChangesAsync(ct);
 
-        _ = _webhooks.PublishEventAsync(WebhookEventTypes.LicenseRevoked, new
+        await _webhooks.PublishEventAsync(WebhookEventTypes.LicenseRevoked, new
         {
             licenseId = license.Id,
             licenseKey = license.LicenseKey,
@@ -161,7 +161,7 @@ public sealed class LicenseService
             revokedAt = license.RevokedAt,
         }, ct);
 
-        _ = _audit.LogAsync("license.revoked", "License", license.Id,
+        await _audit.LogAsync("license.revoked", "License", license.Id,
             new { reason }, ct: ct);
 
         return true;

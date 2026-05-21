@@ -71,7 +71,7 @@ public sealed class ClientLicenseService
         var token = await IssueMarkerAsync(license, req.HwFingerprint, ct);
         await _activationRepo.SaveChangesAsync(ct);
 
-        _ = _webhooks.PublishEventAsync(WebhookEventTypes.LicenseActivated, new
+        await _webhooks.PublishEventAsync(WebhookEventTypes.LicenseActivated, new
         {
             licenseId = license.Id,
             activationId = existing.Id,

@@ -39,7 +39,7 @@ public sealed class LicenseTemplateService
         // Auto-generate the first signing key so versions can be created immediately
         await _signer.GenerateKeyPairAsync(template.Id, ct);
 
-        _ = _audit.LogAsync("template.created", "Template", template.Id,
+        await _audit.LogAsync("template.created", "Template", template.Id,
             new { name = req.Name, productCode = req.ProductCode }, ct: ct);
 
         return Map(template);
@@ -70,7 +70,7 @@ public sealed class LicenseTemplateService
         template.UpdatedAt = DateTimeOffset.UtcNow;
         await _repo.SaveChangesAsync(ct);
 
-        _ = _audit.LogAsync("template.archived", "Template", template.Id, ct: ct);
+        await _audit.LogAsync("template.archived", "Template", template.Id, ct: ct);
 
         return true;
     }
@@ -141,7 +141,7 @@ public sealed class LicenseTemplateService
 
         var newKeyId = await _signer.RotateKeyAsync(templateId, ct);
 
-        _ = _audit.LogAsync("signing_key.rotated", "SigningKey", newKeyId,
+        await _audit.LogAsync("signing_key.rotated", "SigningKey", newKeyId,
             new { templateId, newKeyId }, ct: ct);
 
         // Return the new key
@@ -154,7 +154,7 @@ public sealed class LicenseTemplateService
     {
         await _signer.RetireKeyAsync(keyId, ct);
 
-        _ = _audit.LogAsync("signing_key.retired", "SigningKey", keyId,
+        await _audit.LogAsync("signing_key.retired", "SigningKey", keyId,
             new { templateId }, ct: ct);
     }
 
