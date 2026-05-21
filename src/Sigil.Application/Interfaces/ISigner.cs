@@ -21,4 +21,14 @@ public interface ISigner
     /// and persist only the public key + reference in the database.
     /// </summary>
     Task<(Guid KeyId, byte[] PublicKey)> GenerateKeyPairAsync(Guid templateId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Rotate the active signing key for a template:
+    /// marks the current Active key as Rotating, generates a new Active key.
+    /// Returns the new key id.
+    /// </summary>
+    Task<Guid> RotateKeyAsync(Guid templateId, CancellationToken ct = default);
+
+    /// <summary>Manually retire a Rotating key once all active licenses have been migrated.</summary>
+    Task RetireKeyAsync(Guid signingKeyId, CancellationToken ct = default);
 }

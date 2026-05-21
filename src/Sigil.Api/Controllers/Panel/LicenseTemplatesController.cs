@@ -64,4 +64,38 @@ public sealed class LicenseTemplatesController : ControllerBase
         var version = await _service.CreateVersionAsync(id, req, ct);
         return Ok(version);
     }
+
+    // ── Signing keys ──────────────────────────────────────────────────────
+
+    [HttpGet("{id:guid}/signing-keys")]
+    public async Task<IActionResult> GetSigningKeys(Guid id, CancellationToken ct)
+        => Ok(await _service.GetSigningKeysAsync(id, ct));
+
+    [HttpPost("{id:guid}/signing-keys/rotate")]
+    public async Task<IActionResult> RotateKey(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var key = await _service.RotateKeyAsync(id, ct);
+            return Ok(key);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{id:guid}/signing-keys/{keyId:guid}/retire")]
+    public async Task<IActionResult> RetireKey(Guid id, Guid keyId, CancellationToken ct)
+    {
+        try
+        {
+            await _service.RetireKeyAsync(id, keyId, ct);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

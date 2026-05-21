@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using NSec.Cryptography;
 using Sigil.Application.Interfaces;
@@ -112,6 +113,40 @@ public sealed class EncryptedFileSigner : ISigner
         await _db.SaveChangesAsync(ct);
 
         return (keyId, publicKeyBytes);
+    }
+
+    /// <inheritdoc />
+    public async Task<Guid> RotateKeyAsync(Guid templateId, CancellationToken ct = default)
+    {
+        var keys = await _db.SigningKeys
+            .Where(k => k.TemplateId == templateId && k.Status == SigningKeyStatus.Active)
+            .ToListAsync(ct);
+
+        foreach (var k in keys)
+        {
+            k.Status = SigningKeyStatus.Rotating;
+            k.NotAfter = DateTimeOffset.UtcNow;
+            k.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        var (newKeyId, _) = await GenerateKeyPairAsync(templateId, ct);
+        return newKeyId;
+    }
+
+    /// <inheritdoc />
+    public async Task RetireKeyAsync(Guid signingKeyId, CancellationToken ct = default)
+    {
+        var key = await _db.SigningKeys.FindAsync([signingKeyId], ct)
+            ?? throw new KeyNotFoundException($"SigningKey {signingKeyId} not found.");
+
+        if (key.Status == SigningKeyStatus.Active)
+            throw new InvalidOperationException("Cannot retire an Active key. Rotate it first.");
+
+        key.Status = SigningKeyStatus.Retired;
+        key.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync(ct);
     }
 
     /// <summary>

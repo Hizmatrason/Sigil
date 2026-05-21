@@ -1,6 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import {
   Building2,
+  ClipboardList,
   FileText,
   Fingerprint,
   KeyRound,
@@ -17,6 +18,7 @@ const mainNav = [
   { to: '/companies', label: 'Companies', icon: Building2 },
   { to: '/templates', label: 'Templates', icon: FileText },
   { to: '/licenses', label: 'Licenses', icon: KeyRound },
+  { to: '/audit', label: 'Audit Log', icon: ClipboardList },
 ]
 
 export function Sidebar() {

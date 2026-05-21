@@ -95,6 +95,15 @@ export interface CreateTemplateVersionRequest {
   changelog?: string
 }
 
+export interface SigningKey {
+  id: string
+  status: string
+  notBefore: string
+  notAfter?: string
+  createdAt: string
+  publicKeyHex: string
+}
+
 // ── Licenses ──────────────────────────────────────────────────────────────
 
 export interface License {
@@ -144,6 +153,19 @@ export interface Activation {
 export interface HeartbeatEntry {
   id: string
   activationId: string
+  occurredAt: string
+}
+
+// ── Audit Log ─────────────────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: string
+  action: string
+  actorEmail?: string
+  entityType: string
+  entityId?: string
+  meta?: string
+  ipAddress?: string
   occurredAt: string
 }
 

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Sigil.Application.Dtos;
 using Sigil.Application.Licensing;
 using Sigil.Application.Services;
@@ -11,6 +12,7 @@ namespace Sigil.Api.Controllers.Client;
 /// </summary>
 [ApiController]
 [Route("api/v1/client")]
+[EnableRateLimiting("client_api")]
 public sealed class ClientLicensesController : ControllerBase
 {
     private readonly ClientLicenseService _svc;

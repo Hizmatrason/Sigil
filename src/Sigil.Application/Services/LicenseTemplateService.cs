@@ -9,11 +9,13 @@ public sealed class LicenseTemplateService
 {
     private readonly ILicenseTemplateRepository _repo;
     private readonly ISigner _signer;
+    private readonly AuditService _audit;
 
-    public LicenseTemplateService(ILicenseTemplateRepository repo, ISigner signer)
+    public LicenseTemplateService(ILicenseTemplateRepository repo, ISigner signer, AuditService audit)
     {
         _repo = repo;
         _signer = signer;
+        _audit = audit;
     }
 
     public async Task<LicenseTemplateResponse> CreateAsync(LicenseTemplateCreateRequest req, CancellationToken ct = default)
@@ -36,6 +38,9 @@ public sealed class LicenseTemplateService
 
         // Auto-generate the first signing key so versions can be created immediately
         await _signer.GenerateKeyPairAsync(template.Id, ct);
+
+        _ = _audit.LogAsync("template.created", "Template", template.Id,
+            new { name = req.Name, productCode = req.ProductCode }, ct: ct);
 
         return Map(template);
     }
@@ -64,6 +69,9 @@ public sealed class LicenseTemplateService
         template.Status = TemplateStatus.Archived;
         template.UpdatedAt = DateTimeOffset.UtcNow;
         await _repo.SaveChangesAsync(ct);
+
+        _ = _audit.LogAsync("template.archived", "Template", template.Id, ct: ct);
+
         return true;
     }
 
@@ -116,6 +124,43 @@ public sealed class LicenseTemplateService
 
         return MapVersion(version);
     }
+
+    // ── Signing keys ──────────────────────────────────────────────────────
+
+    public async Task<IReadOnlyList<SigningKeyDto>> GetSigningKeysAsync(Guid templateId, CancellationToken ct = default)
+    {
+        var template = await _repo.GetByIdAsync(templateId, ct);
+        if (template is null) return [];
+        return template.SigningKeys.Select(MapKey).ToList();
+    }
+
+    public async Task<SigningKeyDto> RotateKeyAsync(Guid templateId, CancellationToken ct = default)
+    {
+        var template = await _repo.GetByIdAsync(templateId, ct)
+            ?? throw new InvalidOperationException("Template not found");
+
+        var newKeyId = await _signer.RotateKeyAsync(templateId, ct);
+
+        _ = _audit.LogAsync("signing_key.rotated", "SigningKey", newKeyId,
+            new { templateId, newKeyId }, ct: ct);
+
+        // Return the new key
+        var newTemplate = await _repo.GetByIdAsync(templateId, ct);
+        var newKey = newTemplate!.SigningKeys.First(k => k.Id == newKeyId);
+        return MapKey(newKey);
+    }
+
+    public async Task RetireKeyAsync(Guid templateId, Guid keyId, CancellationToken ct = default)
+    {
+        await _signer.RetireKeyAsync(keyId, ct);
+
+        _ = _audit.LogAsync("signing_key.retired", "SigningKey", keyId,
+            new { templateId }, ct: ct);
+    }
+
+    private static SigningKeyDto MapKey(Domain.Entities.SigningKey k)
+        => new(k.Id, k.Status.ToString(), k.NotBefore, k.NotAfter, k.CreatedAt,
+               Convert.ToHexString(k.PublicKey).ToLowerInvariant());
 
     private static LicenseTemplateResponse Map(LicenseTemplate t)
         => new(t.Id, t.Name, t.ProductCode, t.Description,

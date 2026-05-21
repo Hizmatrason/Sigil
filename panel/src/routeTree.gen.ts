@@ -13,7 +13,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutAuditRouteImport } from './routes/_layout/audit'
 import { Route as LayoutTemplatesIndexRouteImport } from './routes/_layout/templates.index'
+import { Route as LayoutSettingsIndexRouteImport } from './routes/_layout/settings.index'
 import { Route as LayoutLicensesIndexRouteImport } from './routes/_layout/licenses.index'
 import { Route as LayoutCompaniesIndexRouteImport } from './routes/_layout/companies.index'
 import { Route as LayoutTemplatesTemplateIdRouteImport } from './routes/_layout/templates.$templateId'
@@ -40,10 +42,20 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutAuditRoute = LayoutAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutTemplatesIndexRoute = LayoutTemplatesIndexRouteImport.update({
   id: '/templates/',
   path: '/templates/',
   getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutSettingsIndexRoute = LayoutSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LayoutSettingsRoute,
 } as any)
 const LayoutLicensesIndexRoute = LayoutLicensesIndexRouteImport.update({
   id: '/licenses/',
@@ -81,6 +93,7 @@ const LayoutCompaniesCompanyIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/login': typeof LoginRoute
+  '/audit': typeof LayoutAuditRoute
   '/settings': typeof LayoutSettingsRouteWithChildren
   '/companies/$companyId': typeof LayoutCompaniesCompanyIdRoute
   '/licenses/$licenseId': typeof LayoutLicensesLicenseIdRoute
@@ -88,11 +101,12 @@ export interface FileRoutesByFullPath {
   '/templates/$templateId': typeof LayoutTemplatesTemplateIdRoute
   '/companies/': typeof LayoutCompaniesIndexRoute
   '/licenses/': typeof LayoutLicensesIndexRoute
+  '/settings/': typeof LayoutSettingsIndexRoute
   '/templates/': typeof LayoutTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/settings': typeof LayoutSettingsRouteWithChildren
+  '/audit': typeof LayoutAuditRoute
   '/': typeof LayoutIndexRoute
   '/companies/$companyId': typeof LayoutCompaniesCompanyIdRoute
   '/licenses/$licenseId': typeof LayoutLicensesLicenseIdRoute
@@ -100,12 +114,14 @@ export interface FileRoutesByTo {
   '/templates/$templateId': typeof LayoutTemplatesTemplateIdRoute
   '/companies': typeof LayoutCompaniesIndexRoute
   '/licenses': typeof LayoutLicensesIndexRoute
+  '/settings': typeof LayoutSettingsIndexRoute
   '/templates': typeof LayoutTemplatesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
   '/login': typeof LoginRoute
+  '/_layout/audit': typeof LayoutAuditRoute
   '/_layout/settings': typeof LayoutSettingsRouteWithChildren
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/companies/$companyId': typeof LayoutCompaniesCompanyIdRoute
@@ -114,6 +130,7 @@ export interface FileRoutesById {
   '/_layout/templates/$templateId': typeof LayoutTemplatesTemplateIdRoute
   '/_layout/companies/': typeof LayoutCompaniesIndexRoute
   '/_layout/licenses/': typeof LayoutLicensesIndexRoute
+  '/_layout/settings/': typeof LayoutSettingsIndexRoute
   '/_layout/templates/': typeof LayoutTemplatesIndexRoute
 }
 export interface FileRouteTypes {
@@ -121,6 +138,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/audit'
     | '/settings'
     | '/companies/$companyId'
     | '/licenses/$licenseId'
@@ -128,11 +146,12 @@ export interface FileRouteTypes {
     | '/templates/$templateId'
     | '/companies/'
     | '/licenses/'
+    | '/settings/'
     | '/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
-    | '/settings'
+    | '/audit'
     | '/'
     | '/companies/$companyId'
     | '/licenses/$licenseId'
@@ -140,11 +159,13 @@ export interface FileRouteTypes {
     | '/templates/$templateId'
     | '/companies'
     | '/licenses'
+    | '/settings'
     | '/templates'
   id:
     | '__root__'
     | '/_layout'
     | '/login'
+    | '/_layout/audit'
     | '/_layout/settings'
     | '/_layout/'
     | '/_layout/companies/$companyId'
@@ -153,6 +174,7 @@ export interface FileRouteTypes {
     | '/_layout/templates/$templateId'
     | '/_layout/companies/'
     | '/_layout/licenses/'
+    | '/_layout/settings/'
     | '/_layout/templates/'
   fileRoutesById: FileRoutesById
 }
@@ -191,12 +213,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/audit': {
+      id: '/_layout/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof LayoutAuditRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/templates/': {
       id: '/_layout/templates/'
       path: '/templates'
       fullPath: '/templates/'
       preLoaderRoute: typeof LayoutTemplatesIndexRouteImport
       parentRoute: typeof LayoutRoute
+    }
+    '/_layout/settings/': {
+      id: '/_layout/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof LayoutSettingsIndexRouteImport
+      parentRoute: typeof LayoutSettingsRoute
     }
     '/_layout/licenses/': {
       id: '/_layout/licenses/'
@@ -245,10 +281,12 @@ declare module '@tanstack/react-router' {
 
 interface LayoutSettingsRouteChildren {
   LayoutSettingsWebhooksRoute: typeof LayoutSettingsWebhooksRoute
+  LayoutSettingsIndexRoute: typeof LayoutSettingsIndexRoute
 }
 
 const LayoutSettingsRouteChildren: LayoutSettingsRouteChildren = {
   LayoutSettingsWebhooksRoute: LayoutSettingsWebhooksRoute,
+  LayoutSettingsIndexRoute: LayoutSettingsIndexRoute,
 }
 
 const LayoutSettingsRouteWithChildren = LayoutSettingsRoute._addFileChildren(
@@ -256,6 +294,7 @@ const LayoutSettingsRouteWithChildren = LayoutSettingsRoute._addFileChildren(
 )
 
 interface LayoutRouteChildren {
+  LayoutAuditRoute: typeof LayoutAuditRoute
   LayoutSettingsRoute: typeof LayoutSettingsRouteWithChildren
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutCompaniesCompanyIdRoute: typeof LayoutCompaniesCompanyIdRoute
@@ -267,6 +306,7 @@ interface LayoutRouteChildren {
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutAuditRoute: LayoutAuditRoute,
   LayoutSettingsRoute: LayoutSettingsRouteWithChildren,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutCompaniesCompanyIdRoute: LayoutCompaniesCompanyIdRoute,

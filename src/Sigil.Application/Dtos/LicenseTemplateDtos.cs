@@ -39,3 +39,11 @@ public sealed record TemplateVersionResponse(
     Guid SigningKeyId,
     string? Changelog,
     DateTimeOffset CreatedAt);
+
+public sealed record SigningKeyDto(
+    Guid Id,
+    string Status,
+    DateTimeOffset NotBefore,
+    DateTimeOffset? NotAfter,
+    DateTimeOffset CreatedAt,
+    string PublicKeyHex);

@@ -17,19 +17,22 @@ public sealed class LicenseService
     private readonly ICompanyRepository _companyRepo;
     private readonly ISigner _signer;
     private readonly WebhookService _webhooks;
+    private readonly AuditService _audit;
 
     public LicenseService(
         ILicenseRepository licenseRepo,
         ILicenseTemplateRepository templateRepo,
         ICompanyRepository companyRepo,
         ISigner signer,
-        WebhookService webhooks)
+        WebhookService webhooks,
+        AuditService audit)
     {
         _licenseRepo = licenseRepo;
         _templateRepo = templateRepo;
         _companyRepo = companyRepo;
         _signer = signer;
         _webhooks = webhooks;
+        _audit = audit;
     }
 
     public async Task<LicenseTokenResponse> IssueAsync(LicenseCreateRequest req, CancellationToken ct = default)
@@ -115,6 +118,9 @@ public sealed class LicenseService
             expiresAt,
         }, ct);
 
+        _ = _audit.LogAsync("license.issued", "License", license.Id,
+            new { licenseKey, companyId = company.Id, templateId = template.Id }, ct: ct);
+
         return new LicenseTokenResponse(licenseKey, token, publicKeyHex);
     }
 
@@ -154,6 +160,9 @@ public sealed class LicenseService
             reason,
             revokedAt = license.RevokedAt,
         }, ct);
+
+        _ = _audit.LogAsync("license.revoked", "License", license.Id,
+            new { reason }, ct: ct);
 
         return true;
     }

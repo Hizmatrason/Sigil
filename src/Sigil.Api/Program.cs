@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -10,6 +11,7 @@ using Sigil.Infrastructure.Data;
 using Sigil.Infrastructure.Repositories;
 using Sigil.Infrastructure.Signing;
 using Sigil.Infrastructure.Webhooks;
+using System.Threading.RateLimiting;
 
 const string ServiceName = "sigil-api";
 
@@ -39,9 +41,7 @@ try
             t.AddAspNetCoreInstrumentation()
              .AddHttpClientInstrumentation();
             if (!string.IsNullOrWhiteSpace(otelEndpoint))
-            {
                 t.AddOtlpExporter(o => o.Endpoint = new Uri(otelEndpoint));
-            }
         })
         .WithMetrics(m =>
         {
@@ -50,9 +50,7 @@ try
              .AddRuntimeInstrumentation()
              .AddMeter("Sigil.*");
             if (!string.IsNullOrWhiteSpace(otelEndpoint))
-            {
                 m.AddOtlpExporter(o => o.Endpoint = new Uri(otelEndpoint));
-            }
         });
 
     // EF Core — Npgsql + snake_case naming convention
@@ -66,16 +64,19 @@ try
     });
 
     // Repositories
-    builder.Services.AddScoped<ICompanyRepository, Sigil.Infrastructure.Repositories.CompanyRepository>();
-    builder.Services.AddScoped<ILicenseTemplateRepository, Sigil.Infrastructure.Repositories.LicenseTemplateRepository>();
-    builder.Services.AddScoped<ILicenseRepository, Sigil.Infrastructure.Repositories.LicenseRepository>();
-    builder.Services.AddScoped<IUserRepository, Sigil.Infrastructure.Repositories.UserRepository>();
-    builder.Services.AddScoped<IActivationRepository, Sigil.Infrastructure.Repositories.ActivationRepository>();
-    builder.Services.AddScoped<IHeartbeatRepository, Sigil.Infrastructure.Repositories.HeartbeatRepository>();
+    builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+    builder.Services.AddScoped<ILicenseTemplateRepository, LicenseTemplateRepository>();
+    builder.Services.AddScoped<ILicenseRepository, LicenseRepository>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IActivationRepository, ActivationRepository>();
+    builder.Services.AddScoped<IHeartbeatRepository, HeartbeatRepository>();
     builder.Services.AddScoped<IWebhookEndpointRepository, WebhookEndpointRepository>();
     builder.Services.AddScoped<IWebhookDeliveryRepository, WebhookDeliveryRepository>();
+    builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
     // Services
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<AuditService>();
     builder.Services.AddScoped<CompanyService>();
     builder.Services.AddScoped<LicenseTemplateService>();
     builder.Services.AddScoped<WebhookService>();
@@ -83,15 +84,12 @@ try
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<ClientLicenseService>();
 
-    // Webhook dispatch worker
-    builder.Services.AddHttpClient("webhook", c =>
-    {
-        c.Timeout = TimeSpan.FromSeconds(30);
-    });
-    builder.Services.AddHostedService<WebhookDispatchWorker>();
-
     // Signer
     builder.Services.AddScoped<ISigner, EncryptedFileSigner>();
+
+    // Webhook dispatch worker
+    builder.Services.AddHttpClient("webhook", c => c.Timeout = TimeSpan.FromSeconds(30));
+    builder.Services.AddHostedService<WebhookDispatchWorker>();
 
     // Auth — cookie-based
     builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -113,7 +111,7 @@ try
         });
     builder.Services.AddAuthorization();
 
-    // CORS — origins из SIGIL_CORS_ORIGINS (запятая-separated), fallback для dev
+    // CORS — origins from SIGIL_CORS_ORIGINS (comma-separated), fallback for dev
     var corsOrigins = (builder.Configuration["Cors:Origins"]
         ?? Environment.GetEnvironmentVariable("SIGIL_CORS_ORIGINS")
         ?? "http://localhost:5173")
@@ -128,6 +126,34 @@ try
                   .AllowAnyMethod()
                   .AllowCredentials();
         });
+    });
+
+    // Rate limiting
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = 429;
+
+        // Client API (activate/heartbeat) — 100 req/min per IP
+        options.AddPolicy("client_api", ctx =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    Window = TimeSpan.FromMinutes(1),
+                    PermitLimit = 100,
+                    QueueLimit = 0,
+                }));
+
+        // Panel API — 300 req/min per IP
+        options.AddPolicy("panel_api", ctx =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    Window = TimeSpan.FromMinutes(1),
+                    PermitLimit = 300,
+                    QueueLimit = 0,
+                }));
     });
 
     // Health checks
@@ -148,8 +174,22 @@ try
         await auth.SeedOperatorAsync(seedEmail, seedPassword);
     }
 
+    // Security headers
+    app.Use(async (ctx, next) =>
+    {
+        ctx.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        ctx.Response.Headers.Append("X-Frame-Options", "DENY");
+        ctx.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        ctx.Response.Headers.Append("X-XSS-Protection", "0");
+        ctx.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+        if (!app.Environment.IsDevelopment())
+            ctx.Response.Headers.Append("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+        await next();
+    });
+
     app.UseSerilogRequestLogging();
     app.UseCors();
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();

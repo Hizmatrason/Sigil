@@ -8,6 +8,7 @@ import {
   type TemplateVersion,
   type UpdateTemplateRequest,
   type CreateTemplateVersionRequest,
+  type SigningKey,
 } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,7 +34,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { StatusBadge } from '@/lib/status'
-import { Archive, ArrowLeft, BookOpen, Edit, Plus } from 'lucide-react'
+import { Archive, ArrowLeft, BookOpen, Edit, Plus, RotateCcw, ShieldCheck } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/_layout/templates/$templateId')({
@@ -60,6 +62,37 @@ function TemplateDetailPage() {
       const { data } = await api.get<TemplateVersion[]>(`/panel/templates/${templateId}/versions`)
       return data
     },
+  })
+
+  const { data: signingKeys } = useQuery({
+    queryKey: ['templates', templateId, 'signing-keys'],
+    queryFn: async () => {
+      const { data } = await api.get<SigningKey[]>(`/panel/templates/${templateId}/signing-keys`)
+      return data
+    },
+  })
+
+  const rotateMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post<SigningKey>(`/panel/templates/${templateId}/signing-keys/rotate`)
+      return data
+    },
+    onSuccess: () => {
+      toast.success('New signing key generated — old key is now Rotating')
+      queryClient.invalidateQueries({ queryKey: ['templates', templateId, 'signing-keys'] })
+    },
+    onError: () => toast.error('Key rotation failed'),
+  })
+
+  const retireMutation = useMutation({
+    mutationFn: async (keyId: string) => {
+      await api.post(`/panel/templates/${templateId}/signing-keys/${keyId}/retire`)
+    },
+    onSuccess: () => {
+      toast.success('Key retired')
+      queryClient.invalidateQueries({ queryKey: ['templates', templateId, 'signing-keys'] })
+    },
+    onError: () => toast.error('Failed to retire key'),
   })
 
   const updateMutation = useMutation({
@@ -199,6 +232,10 @@ function TemplateDetailPage() {
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="security">
+            <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
+            Security
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="mt-5">
@@ -299,6 +336,121 @@ function TemplateDetailPage() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="security" className="mt-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Signing keys</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Ed25519 key pairs used to sign license tokens for this template.
+                </p>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" disabled={rotateMutation.isPending}>
+                    <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                    Rotate key
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Rotate signing key?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      A new Ed25519 key pair will be generated and become the active signing key.
+                      The current key will be marked <strong>Rotating</strong> — existing tokens
+                      signed with it remain valid. Retire the old key manually once all licenses
+                      have been reissued.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => rotateMutation.mutate()}>
+                      Rotate
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+
+            <div className="space-y-2">
+              {signingKeys?.map((key) => (
+                <div
+                  key={key.id}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs font-mono text-muted-foreground">
+                        {key.id.slice(0, 8)}…
+                      </code>
+                      <span
+                        className={cn(
+                          'rounded px-1.5 py-0.5 text-[10px] font-medium',
+                          key.status === 'Active' && 'bg-emerald-500/15 text-emerald-400',
+                          key.status === 'Rotating' && 'bg-yellow-500/15 text-yellow-400',
+                          key.status === 'Retired' && 'bg-zinc-500/15 text-zinc-400',
+                          key.status === 'Compromised' && 'bg-red-500/15 text-red-400',
+                        )}
+                      >
+                        {key.status}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] font-mono text-muted-foreground/60 truncate">
+                      {key.publicKeyHex}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(key.createdAt).toLocaleDateString()}
+                    </p>
+                    {key.notAfter && (
+                      <p className="text-[11px] text-muted-foreground/60">
+                        retired {new Date(key.notAfter).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  {key.status === 'Rotating' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                      disabled={retireMutation.isPending}
+                      onClick={() => retireMutation.mutate(key.id)}
+                    >
+                      Retire
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <details className="rounded-xl border border-border bg-card text-sm">
+              <summary className="cursor-pointer select-none px-4 py-3 font-medium text-foreground">
+                About key rotation
+              </summary>
+              <div className="border-t border-border px-4 pb-4 pt-3 space-y-2 text-muted-foreground text-sm">
+                <p>
+                  <strong className="text-foreground">Active</strong> — this key signs all new license tokens.
+                  Only one key per template can be Active at a time.
+                </p>
+                <p>
+                  <strong className="text-foreground">Rotating</strong> — the key is no longer used for
+                  signing but is still referenced in existing tokens. Tokens signed with this key
+                  remain valid for verification.
+                </p>
+                <p>
+                  <strong className="text-foreground">Retired</strong> — the key is considered decommissioned.
+                  Retire a Rotating key after all licenses have been reissued with the new key.
+                </p>
+                <p>
+                  <strong className="text-foreground">When to rotate</strong> — rotate if the private key
+                  file is compromised, or as part of a scheduled security policy.
+                </p>
+              </div>
+            </details>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
