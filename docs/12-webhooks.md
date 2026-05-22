@@ -101,7 +101,7 @@ Fired when a license is manually revoked.
 
 ### `license.expired`
 
-Fired by the expiry monitor when a license passes its `expiresAt` date. *(Planned for Phase 5)*
+Fired by the expiry monitor when a license passes its `expiresAt` date.
 
 ```json
 {
@@ -127,7 +127,7 @@ Fired when the Sigil SDK activates a license on a new machine.
 
 ### `license.heartbeat_missed`
 
-Fired by the heartbeat monitor when no heartbeat has been received within the expected window. *(Planned for Phase 5)*
+Fired by the heartbeat monitor when no heartbeat has been received within the expected window.
 
 ```json
 {

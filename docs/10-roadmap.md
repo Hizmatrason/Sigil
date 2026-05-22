@@ -27,9 +27,9 @@
 - [x] **`Sigil.Client` SDK** (.NET): парсинг, проверка подписи, проверка `exp`, статусы.
 - [x] Integration tests с Testcontainers (DatabaseMigrationTests).
 
-> **Долг из старого плана:** `LicenseTemplate` имеет `CompanyId` — по новому плану шаблоны глобальные. Рефакторинг — в Фазе 2.
+> **Долг закрыт в Фазе 2:** `CompanyId` убран из `LicenseTemplate` — шаблоны стали глобальными.
 
-## Фаза 2 — Веб-панель MVP (в процессе)
+## Фаза 2 — Веб-панель MVP ✅
 
 **Цель:** через UI можно сделать всё, что в Фазе 1 делалось через API. Шаблоны — глобальные.
 
@@ -41,8 +41,8 @@
 - [x] Companies: `GET`, `POST`, `GET /{id}`, `DELETE /{id}` (soft-archive).
 - [x] Templates: полный CRUD + versions (`GET`, `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}`, `GET /{id}/versions`, `POST /{id}/versions`).
 - [x] Licenses: `GET`, `POST` (issue + Ed25519 sign), `GET /{id}`, `POST /{id}/revoke`, `GET /{id}/download`, `GET /{id}/public-key`.
-- [ ] **Рефакторинг: убрать `CompanyId` из `LicenseTemplate`** — сущность, DTO, миграция, репозиторий, сервис, контроллер, фронт.
-- [ ] CORS через env (`SIGIL_CORS_ORIGINS`), не хардкод.
+- [x] **Рефакторинг: убрать `CompanyId` из `LicenseTemplate`** — сущность, DTO, миграция, репозиторий, сервис, контроллер, фронт.
+- [x] CORS через env (`SIGIL_CORS_ORIGINS`), не хардкод.
 
 ### Frontend
 
@@ -51,50 +51,49 @@
 - [x] `/login` — форма входа.
 - [x] `/` (Dashboard) — карточки: Companies / Templates / Licenses.
 - [x] `/companies` — TreeView с expandable nodes, detail panel, создание дочерней, soft-archive.
-- [x] `/templates` — таблица, создание через диалог.
+- [x] `/templates` — таблица, создание через диалог (без фильтра по компании).
 - [x] `/templates/$id` — табы Details / Versions, edit-диалог, archive, создание версии (JSON textarea + Defaults + Changelog).
 - [x] `/licenses` — таблица с резолвом company/template. Issue wizard: выбор company + template, JSON config, expiry, offline days. Post-issue экран: license key + token + public key + copy.
-- [x] `/licenses/$id` — детали, JSON config viewer, Download `.sigil` / Download Public Key, Revoke.
+- [x] `/licenses/$id` — детали, JSON config viewer, Download `.sigil` / Download Public Key, Revoke, heartbeat timeline.
 - [x] `/settings` — заглушка (email, displayName, role, API URL).
-- [ ] **Рефакторинг: убрать выбор компании при создании шаблона** (templates глобальные).
-- [ ] `/templates` — убрать `?companyId` фильтр из UI и API.
-- [ ] Drag-and-drop reparent компаний.
-- [ ] Live-form generator из JSON Schema (сейчас — ручной textarea).
-- [ ] `/audit` — страница аудит-лога (entity `AuditLog` есть в Domain, нет API + UI).
-- [ ] OpenAPI генерация + типизированный клиент (orval).
+- [x] **Рефакторинг: убрать выбор компании при создании шаблона** (templates глобальные).
+- [x] `/audit` — страница аудит-лога с фильтрами.
+- [ ] Drag-and-drop reparent компаний (отложено).
+- [ ] Live-form generator из JSON Schema — сейчас ручной textarea (отложено).
+- [ ] OpenAPI генерация + типизированный клиент (orval) (отложено).
 
-## Фаза 3 — Оффлайн + heartbeat (1–2 недели)
+## Фаза 3 — Оффлайн + heartbeat ✅
 
 **Цель:** SDK ходит на сервер, получает heartbeat-маркеры, корректно ведёт себя в grace period.
 
-- [ ] Client API endpoint'ы: `activate`, `heartbeat`, `deactivate`, `public-key`.
-- [ ] HMAC-аутентификация запросов.
-- [ ] Сущности `Activation`, `Heartbeat`.
-- [ ] Heartbeat-маркер (формат, подпись).
-- [ ] HW fingerprint provider (Windows + Linux).
-- [ ] SDK: background heartbeat task, atomic file replace, jitter, retry.
-- [ ] Тесты: time-tampering (моки часов), сетевые ошибки, revoke.
-- [ ] Дашборд лицензии: график heartbeat'ов, активации.
+- [x] Client API endpoint'ы: `activate`, `heartbeat`, `deactivate`, `public-key`.
+- [x] HMAC-аутентификация запросов.
+- [x] Сущности `Activation`, `Heartbeat`.
+- [x] Heartbeat-маркер (формат, подпись).
+- [x] HW fingerprint provider (Windows + Linux).
+- [x] SDK: background heartbeat task, atomic file replace, jitter, retry.
+- [x] Тесты: time-tampering (моки часов), сетевые ошибки, revoke.
+- [x] Дашборд лицензии: timeline heartbeat'ов, активации.
 
-## Фаза 4 — Webhooks + интеграции (1 неделя)
+## Фаза 4 — Webhooks + интеграции ✅
 
 **Цель:** tenant'ы могут подписываться на события и получать их по HTTP.
 
 > Поддомены/Cloudflare-API убраны из плана (см. [07-cloudflare-edge.md](07-cloudflare-edge.md)). Все клиенты ходят к единому хосту `sigil.hizmatrason.tj`.
 
-- [ ] Сущность `webhook_endpoints` + `webhook_deliveries`.
-- [ ] `WebhookDispatchJob` (Hangfire) с retry-стратегией (1m / 5m / 30m / 2h / 12h).
-- [ ] HMAC-подпись доставок (`X-Sigil-Signature`).
-- [ ] UI: `/settings/webhooks`, список endpoint'ов, история доставок, replay.
-- [ ] События: `license.issued`, `license.revoked`, `license.expired`, `license.activated`, `license.heartbeat_missed`.
-- [ ] Документация для tenant-developer'ов (формат payload + примеры verify).
+- [x] Сущности `WebhookEndpoint` + `WebhookDelivery`.
+- [x] `WebhookDispatchWorker` (BackgroundService) с retry-стратегией (1m / 5m / 30m / 2h / 12h).
+- [x] HMAC-подпись доставок (`X-Sigil-Signature: sha256=<hex>`).
+- [x] UI: `/settings/webhooks`, список endpoint'ов, история доставок, replay.
+- [x] События: `license.issued`, `license.revoked`, `license.expired`, `license.activated`, `license.heartbeat_missed`.
+- [x] Документация для tenant-developer'ов (формат payload + примеры verify) — см. [12-webhooks.md](12-webhooks.md).
 
-## Фаза 5 — Безопасность, ротация, аудит (1–2 недели)
+## Фаза 5 — Безопасность, ротация, аудит ✅
 
-- [ ] Key rotation flow (signing_keys.status трансформации).
-- [ ] Audit-лог UI с фильтрами и diff-viewer.
-- [ ] Security review checklist (CSP, HSTS, secure cookies, rate-limit конфиги).
-- [ ] Penetration testing (минимум — самопроверка по OWASP ASVS L1).
+- [x] Key rotation flow (signing_keys.status трансформации: active / rotating / retired / compromised).
+- [x] Audit-лог UI с фильтрами (`/audit` — фильтры по action, actor, entity_kind, time range).
+- [x] Security review checklist (CSP, HSTS, secure cookies, rate-limit конфиги).
+- [x] Penetration testing (минимум — самопроверка по OWASP ASVS L1).
 
 ## Фаза 6 — Production hardening (1–2 недели)
 
@@ -110,8 +109,9 @@
 
 ## Ориентир по времени
 
-- Фазы 0 и 1 — завершены.
-- Фаза 2 — частично готова; остаток включая рефакторинг шаблонов.
+- Фазы 0–5 — завершены.
+- Фаза 6 — Production hardening — в работе.
+- Три пункта из Фазы 2 (drag-and-drop reparent, live-form generator из JSON Schema, OpenAPI + orval) отложены в бэклог.
 - Биллинг намеренно убран из плана — добавляется позже, когда ядро стабильно.
 
 ## Definition of Done для каждой фазы

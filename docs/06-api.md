@@ -132,9 +132,9 @@ POST   /api/v1/client/heartbeat
           - license_token — только если config_version устарел
           - revoked: { reason, revoked_at, revocation_token } — если отозвана
 
-GET    /api/v1/client/public-key/{template_id}
+GET    /api/v1/client/public-key/{licenseKey}
        (без auth — для случая, когда клиент потерял встроенный ключ)
-       → 200 { public_key, kid, algorithm }
+       → 200 { publicKey }
 
 POST   /api/v1/client/deactivate
        Body: { hw_fingerprint }

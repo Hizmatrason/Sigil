@@ -5,7 +5,7 @@
 ### Языки и фреймворки
 - **.NET 10** (LTS), C# `latest` (via `LangVersion`).
 - **ASP.NET Core 10** — Controllers + Minimal APIs гибрид. Controllers для панели, Minimal APIs для client-API (он крошечный, ~5 endpoint'ов).
-- **EF Core 8** + **Npgsql.EntityFrameworkCore.PostgreSQL**.
+- **EF Core 10** + **Npgsql.EntityFrameworkCore.PostgreSQL**.
 - **MediatR** — CQRS-like разделение команд/запросов (опционально, но рекомендую — упрощает тесты).
 - **FluentValidation** — валидация входящих DTO.
 - **AutoMapper** или ручные mapper'ы (для маленького проекта ручные часто лучше).
@@ -63,7 +63,7 @@ Sigil.sln
 ## Frontend
 
 ### Стек
-- **Vite** + **React 18** + **TypeScript 5**.
+- **Vite** + **React 19** + **TypeScript 5**.
 - **shadcn/ui** (Radix + Tailwind), Tailwind v3.
 - **TanStack Router** (file-based routing) или **React Router** v6 — на выбор; рекомендую TanStack Router (type-safe routes).
 - **TanStack Query** — server state.

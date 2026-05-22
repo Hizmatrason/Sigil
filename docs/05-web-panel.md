@@ -1,6 +1,6 @@
 # 05 — Веб-панель
 
-Vite + React 18 + TypeScript + shadcn/ui + Tailwind. Один SPA-bundle, маршрутизация — TanStack Router, данные — TanStack Query, формы — react-hook-form + zod, таблицы — TanStack Table.
+Vite + React 19 + TypeScript + shadcn/ui + Tailwind. Один SPA-bundle, маршрутизация — TanStack Router, данные — TanStack Query, формы — react-hook-form + zod, таблицы — TanStack Table.
 
 ## Структура приложения
 

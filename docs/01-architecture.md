@@ -8,7 +8,7 @@
                  │                                                  │
    Operator/     │   ┌──────────────┐    ┌────────────────────┐     │
    Tenant Admin ─┼──▶│   Web Panel   │───▶│  Panel API (REST)  │    │
-   (browser)     │   │ (Vite/React)  │    │   ASP.NET Core 8   │    │
+   (browser)     │   │ (Vite/React)  │    │   ASP.NET Core 10  │    │
                  │   └──────────────┘    └─────────┬──────────┘     │
                  │                                  │                │
                  │                                  ▼                │
@@ -49,7 +49,7 @@
 - Деплой: статика за nginx на той же self-hosted VM.
 
 ### 2. Panel API (`Sigil.Api`)
-- ASP.NET Core 8, Minimal APIs либо Controllers (на выбор; рекомендую Controllers + MediatR для CQRS).
+- ASP.NET Core 10, Minimal APIs либо Controllers (на выбор; рекомендую Controllers + MediatR для CQRS).
 - Эндпоинты под `/api/v1/panel/*`.
 - Авторизация: JWT в HttpOnly cookie + CSRF token, либо OpenIddict с PKCE.
 - Роли и пермишены — см. [05-web-panel.md](05-web-panel.md).
