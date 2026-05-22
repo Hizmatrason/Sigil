@@ -165,9 +165,12 @@ try
 
     var app = builder.Build();
 
-    // Seed initial operator user
+    // Apply pending EF Core migrations and seed data
     using (var scope = app.Services.CreateScope())
     {
+        var db = scope.ServiceProvider.GetRequiredService<SigilDbContext>();
+        await db.Database.MigrateAsync();
+
         var auth = scope.ServiceProvider.GetRequiredService<AuthService>();
         var seedEmail = builder.Configuration["Seed:OperatorEmail"] ?? "admin@sigil.local";
         var seedPassword = builder.Configuration["Seed:OperatorPassword"] ?? "changeme";
